@@ -1,5 +1,7 @@
 # Salve Italia
 
+[![CI](https://github.com/Alpha-tech-CG/salve-_italia/actions/workflows/ci.yml/badge.svg)](https://github.com/Alpha-tech-CG/salve-_italia/actions/workflows/ci.yml)
+
 Plateforme d'accompagnement des étudiants congolais vers les études en Italie.
 Référence fonctionnelle : [SALVE_ITALIA_CAHIER_DES_CHARGES.md](SALVE_ITALIA_CAHIER_DES_CHARGES.md) · sécurité : `security-checklist-1 (2).html`.
 
