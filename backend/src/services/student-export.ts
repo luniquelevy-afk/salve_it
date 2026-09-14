@@ -22,7 +22,7 @@ export function csvCell(value: unknown): string {
 
 // BOM UTF-8 et point-virgule : ouverture directe et correcte dans Excel en français.
 export function toCsv(header: string[], rows: unknown[][]): string {
-  return `﻿${[header, ...rows].map((row) => row.map(csvCell).join(';')).join('\r\n')}\r\n`;
+  return `\uFEFF${[header, ...rows].map((row) => row.map(csvCell).join(';')).join('\r\n')}\r\n`;
 }
 
 const dateFormat = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Africa/Brazzaville' });
