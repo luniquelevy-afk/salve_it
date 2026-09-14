@@ -15,7 +15,7 @@ Référence fonctionnelle : [SALVE_ITALIA_CAHIER_DES_CHARGES.md](SALVE_ITALIA_CA
 
 - [x] **Phase 1 — Fondations** : 3 rôles, comptes créés par l'admin, mot de passe temporaire à changer, MFA admin, suspension immédiate, RLS sur toutes les tables, audit, déconnexion après inactivité
 - [x] **Phase 2 — Moteur de test** : modèles configurables (sections, barème), banque de questions à options variables avec statuts et versions, simulations entraînement / examen, chrono serveur, pas de retour en arrière, correction détaillée, historique
-- [x] **Phase 3 — Agent ambassade IA** : entretien oral (Web Speech API) ou écrit, transcription corrigeable avant envoi, agent `claude-opus-5` à sortie structurée, rapport multidimensionnel généré en tâche de fond, quotas et plafond de coût, journal `ai_usage_logs`, suppression d'un entretien. Sans `ANTHROPIC_API_KEY`, `EMBASSY_FAKE_AI=true` fournit un agent factice pour le développement
+- [x] **Phase 3 — Agent ambassade IA** : entretien oral (Web Speech API) ou écrit, transcription corrigeable avant envoi, agent à sortie structurée (fournisseur `AI_PROVIDER`, **Gemini** en production), rapport multidimensionnel généré en tâche de fond, quotas et plafond de coût, journal `ai_usage_logs`, suppression d'un entretien. En développement, `AI_PROVIDER=fake` fournit un agent factice déterministe (sans clé ni coût, interdit en production)
 - [x] **Phase 4 — Contenu pédagogique** : cours (texte, vidéo, audio, PDF, lien) par niveau et par classe, exercices corrigés côté serveur (QCM, texte à trous, appariement), test de niveau gratuit sans compte avec prospects, calendrier des séances, annonces ciblées, gestion des classes, programmes et inscriptions
 
 - [x] **V1.1 — Parcours et suivi** : profil étudiant (fourchettes budgétaires uniquement), indicateur de préparation, parcours personnalisé à règles explicables, révision espacée et modes révision / défi, comparaison des tentatives, modèles de test versionnés, tableaux de bord enseignant (étudiants à suivre, compétences fragiles, questions ratées, feedback privé) et admin (activité, coûts IA, prospects)
@@ -28,7 +28,7 @@ Référence fonctionnelle : [SALVE_ITALIA_CAHIER_DES_CHARGES.md](SALVE_ITALIA_CA
 - [x] **ENF-09 / ENF-11 — Conservation limitée des données** (`/admin/conservation`) : durées par catégorie (entretiens, données des comptes étudiants suspendus, anciennes versions de documents, prospects et coordonnées du test de niveau, notifications et emails traités), **désactivées par défaut** tant que le centre n'a pas validé le cadre applicable ; aperçu du volume concerné, purge quotidienne et manuelle (fichiers retirés du stockage), exécution tracée dans l'audit ; durées affichées aux étudiants sur les pages Entretien et Documents. Jamais purgés : audit, coûts IA, comptes et résultats de tests
 - [x] **V1.2 — Préparation administrative** : espace documentaire (bucket privé, type réel vérifié, URL signées 60 s, versions et historique), vérification par l'enseignant de la classe ou l'admin, checklist dynamique avec sources officielles et date de vérification (vide tant que le centre n'a pas vérifié), rappels d'expiration, notifications in-app et email (file d'envoi, préférence par utilisateur), CRM avec responsable et historique des interactions
 
-> **IA** : fournisseur choisi par `AI_PROVIDER` (`gemini` par défaut, `claude`, `fake`). Le palier gratuit de Gemini interdit l'envoi de données personnelles : développement avec données fictives uniquement, palier payant (`GEMINI_PAID_TIER=true`) exigé en production.
+> **IA — fournisseur officiel : Google Gemini.** Décision du porteur de projet (le CDC §17.1 citait Claude à titre indicatif ; le choix retenu pour la production est Gemini). `AI_PROVIDER=gemini` par défaut ; `claude` reste une option technique dormante, `fake` sert au développement. Le palier gratuit de Gemini interdit l'envoi de données personnelles (conditions Google) : développement avec données fictives uniquement, **palier payant `GEMINI_PAID_TIER=true` imposé en production** — le backend refuse de démarrer autrement (`NODE_ENV=production`).
 - [x] **Phase 5 — Site vitrine** : accueil, formations (une page par programme), FAQ, galerie, témoignages (publication soumise au consentement), contact et WhatsApp sur toutes les pages, formulaire de contact → prospects (statut, notes, relances). Tout le contenu est administrable (`/admin/site`) : aucune coordonnée, chiffre ou témoignage n'est inventé
 - [x] **§14 — Gamification légère** : série de jours actifs, objectif hebdomadaire et badges de progression (première simulation, 80 % dans une section, 7 jours d'activité, 5 entretiens, documents complets), affichés sur le tableau de bord étudiant. Catalogue de badges administrable, dérivés de l'activité existante et persistés à leur premier déblocage. Pas de classement global public (préférence du CDC) — uniquement la progression personnelle
 
@@ -73,6 +73,46 @@ Test d'intégration RLS (critère d'acceptation Phase 1), Supabase local démarr
 ```bash
 RLS_TEST=1 pnpm --filter @salve/backend test
 ```
+
+## Déploiement (production)
+
+Architecture cible (CDC §17.1) : **frontend sur Vercel**, **backend sur Railway/Render**, **base sur Supabase**. Les clés IA et la clé de service Supabase restent confinées au backend (CDC §17.2).
+
+### 1. Supabase (base + Auth + stockage)
+Créer le projet de production, puis appliquer le schéma :
+
+```bash
+supabase link --project-ref <ref-du-projet>
+supabase db push
+```
+
+Créer le premier admin (`pnpm --filter @salve/backend bootstrap:admin …` avec les variables du projet de prod). Le bucket privé `student-documents` est créé automatiquement au démarrage du backend.
+
+### 2. Backend (Railway ou Render)
+Le blueprint [`render.yaml`](render.yaml) décrit le service (build workspace, `startCommand`, health check `/api/health`). Sur Railway, saisir les mêmes commandes dans l'interface. Variables **à renseigner** (secrets côté plateforme) :
+
+| Variable | Valeur |
+|---|---|
+| `NODE_ENV` | `production` |
+| `AI_PROVIDER` | `gemini` |
+| `GEMINI_PAID_TIER` | `true` (**imposé** : le backend refuse de démarrer sinon) |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | clé du projet Gemini payant + modèle |
+| `GEMINI_INPUT_PRICE_PER_MTOK`, `GEMINI_OUTPUT_PRICE_PER_MTOK` | tarifs (suivi des coûts `ai_usage_logs`) |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY` | projet Supabase de prod |
+| `CORS_ORIGINS` | domaine Vercel du frontend (séparés par des virgules) |
+| `APP_URL`, `SMTP_URL` | URL publique du frontend + serveur d'emails |
+| `REQUIRE_ADMIN_MFA` | `true` |
+
+Le port est fourni par la plateforme (`PORT`) et lu automatiquement.
+
+### 3. Frontend (Vercel)
+[`frontend/vercel.json`](frontend/vercel.json) configure le build Vite et le repli SPA (routes profondes → `index.html`). Root Directory du projet Vercel = `frontend`. Variables :
+
+| Variable | Valeur |
+|---|---|
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | projet Supabase de prod (clé anon/publishable uniquement) |
+| `VITE_API_URL` | URL publique du backend (Railway/Render) |
+| `VITE_IDLE_TIMEOUT_MINUTES` | repli avant chargement du réglage serveur (ex. `30`) |
 
 ## Modèle de sécurité (Phase 1)
 

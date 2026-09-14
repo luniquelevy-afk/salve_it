@@ -1,0 +1,44 @@
+# Blueprint Render pour le backend (CDC §17.1). Railway : mêmes commandes/variables,
+# à saisir dans l'interface (Render fournit PORT automatiquement, lu par env.PORT).
+services:
+  - type: web
+    name: salve-italia-backend
+    runtime: node
+    plan: starter
+    region: frankfurt
+    # pnpm via corepack (version épinglée par packageManager) ; build depuis la racine du workspace.
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @salve/backend build
+    startCommand: pnpm --filter @salve/backend start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: AI_PROVIDER
+        value: gemini
+      # Palier payant obligatoire en production (données de visa = personnelles, ENF-02).
+      - key: GEMINI_PAID_TIER
+        value: "true"
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
+      - key: REQUIRE_ADMIN_MFA
+        value: "true"
+      # Secrets et valeurs propres à l'environnement — à renseigner dans le tableau de bord.
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_INPUT_PRICE_PER_MTOK
+        sync: false
+      - key: GEMINI_OUTPUT_PRICE_PER_MTOK
+        sync: false
+      # Origine(s) autorisée(s) CORS = domaine Vercel du frontend (séparées par des virgules).
+      - key: CORS_ORIGINS
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: SMTP_URL
+        sync: false
