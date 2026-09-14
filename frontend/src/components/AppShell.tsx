@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '../auth/auth-context';
 import { ROLE_LABELS, type AppRole } from '../lib/types';
 import { Logo } from './Logo';
 import { NotificationBell } from './NotificationBell';

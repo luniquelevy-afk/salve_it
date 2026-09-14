@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '../lib/api';
 import { formatDateTime } from '../lib/format';
 import type { DocumentsSpace, StudentDocument } from '../lib/types';
-import { DocumentHistory, DocumentStatusBadge, downloadDocument, formatBytes } from './Documents';
+import { DocumentHistory, DocumentStatusBadge } from './Documents';
+import { downloadDocument, formatBytes } from '../lib/documents';
 import { ErrorBanner } from './ErrorBanner';
 
 function ReviewControls({ document, onChange, onError }: { document: StudentDocument; onChange: (space: DocumentsSpace) => void; onError: (message: string) => void }) {

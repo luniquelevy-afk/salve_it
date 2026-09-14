@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ACCEPTED_FILES, DocumentHistory, DocumentStatusBadge, downloadDocument, formatBytes, MAX_UPLOAD_BYTES } from '../../components/Documents';
+import { DocumentHistory, DocumentStatusBadge } from '../../components/Documents';
+import { ACCEPTED_FILES, downloadDocument, formatBytes, MAX_UPLOAD_BYTES } from '../../lib/documents';
 import { ErrorBanner } from '../../components/ErrorBanner';
 import { RetentionNotice } from '../../components/RetentionNotice';
 import { Meter } from '../../components/Meter';

@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ErrorBanner } from '../../components/ErrorBanner';
-import { ContactDetails, usePublicSite } from '../../components/PublicLayout';
+import { ContactDetails } from '../../components/PublicLayout';
+import { usePublicSite } from '../../lib/public-site';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { api, ApiError } from '../../lib/api';
 

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { useAuth } from '../../auth/AuthProvider';
+import { useAuth } from '../../auth/auth-context';
 import { Logo } from '../../components/Logo';
 import { supabase } from '../../lib/supabase';
 import { homeFor } from '../../lib/types';

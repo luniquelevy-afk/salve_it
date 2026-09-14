@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ErrorBanner } from '../../components/ErrorBanner';
 import { Meter } from '../../components/Meter';
-import { usePublicSite } from '../../components/PublicLayout';
+import { usePublicSite } from '../../lib/public-site';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { api, ApiError } from '../../lib/api';
 import { CEFR_LEVELS, type CefrLevel, type LevelTestQuestion, type LevelTestResult } from '../../lib/types';

@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
-import { usePublicSite } from '../../components/PublicLayout';
+import { usePublicSite } from '../../lib/public-site';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 export function ProgramsPage() {

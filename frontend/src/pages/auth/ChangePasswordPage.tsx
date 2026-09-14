@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../../auth/AuthProvider';
+import { useAuth } from '../../auth/auth-context';
 import { Logo } from '../../components/Logo';
 import { api, ApiError } from '../../lib/api';
 import { homeFor } from '../../lib/types';

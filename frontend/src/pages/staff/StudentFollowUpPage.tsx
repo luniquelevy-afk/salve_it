@@ -7,7 +7,7 @@ import { StaffDocumentsPanel } from '../../components/StaffDocumentsPanel';
 import { api, ApiError } from '../../lib/api';
 import { formatDateTime, formatPercent, formatPoints } from '../../lib/format';
 import { EMBASSY_STATUS_LABELS, MODE_LABELS, VISA_LABELS, type StudentFollowUp, type TeacherFeedback } from '../../lib/types';
-import { PROFILE_LABELS } from '../student/ProfilePage';
+import { PROFILE_LABELS } from '../student/profile-fields';
 
 type Target = { type: TeacherFeedback['targetType']; id: string; label: string };
 

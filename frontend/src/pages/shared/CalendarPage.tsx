@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { useAuth } from '../../auth/AuthProvider';
+import { useAuth } from '../../auth/auth-context';
 import { AttendanceSheet } from '../../components/AttendanceSheet';
 import { ErrorBanner } from '../../components/ErrorBanner';
 import { api, ApiError } from '../../lib/api';

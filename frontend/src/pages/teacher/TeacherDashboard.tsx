@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../auth/AuthProvider';
+import { useAuth } from '../../auth/auth-context';
 import { AnnouncementsPanel } from '../../components/AnnouncementsPanel';
 import { ClassOverview } from '../../components/ClassOverview';
 import { DocumentsOverviewPanel } from '../../components/DocumentsOverviewPanel';

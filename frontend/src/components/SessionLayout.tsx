@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '../auth/auth-context';
 import { useIdleLogout } from '../hooks/useIdleLogout';
 import { api } from '../lib/api';
 

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { usePublicSite } from '../../components/PublicLayout';
+import { usePublicSite } from '../../lib/public-site';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 // Fonctionnalités réelles de la plateforme (aucune donnée inventée sur le centre).

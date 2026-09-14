@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { useAuth } from '../../auth/AuthProvider';
+import { useAuth } from '../../auth/auth-context';
 import { api, apiDownload, ApiError } from '../../lib/api';
 import { CEFR_LEVELS, ROLE_LABELS, type Account, type AppRole, type CefrLevel } from '../../lib/types';
 

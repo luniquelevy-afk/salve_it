@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { useAuth } from '../../auth/AuthProvider';
+import { useAuth } from '../../auth/auth-context';
 import { ClassAttendancePanel, ClassHomeworkPanel } from '../../components/ClassWorkPanels';
 import { ErrorBanner } from '../../components/ErrorBanner';
 import { api, ApiError } from '../../lib/api';

@@ -1,21 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation, useOutletContext } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { api } from '../lib/api';
+import { whatsappLink, type PublicSiteContext } from '../lib/public-site';
 import type { PublicSite, SiteSettings } from '../lib/types';
 import { Logo } from './Logo';
-
-interface PublicSiteContext {
-  site: PublicSite | null;
-  failed: boolean;
-}
-
-export function usePublicSite(): PublicSiteContext {
-  return useOutletContext<PublicSiteContext>();
-}
-
-export function whatsappLink(number: string): string {
-  return `https://wa.me/${number.replace(/\D/g, '')}`;
-}
 
 // EF-34 : coordonnées visibles sur toutes les pages publiques.
 export function ContactDetails({ settings, className = '' }: { settings: SiteSettings; className?: string }) {

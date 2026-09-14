@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { FullPageMessage } from '../components/FullPageMessage';
 import { homeFor, type AppRole } from '../lib/types';
-import { useAuth } from './AuthProvider';
+import { useAuth } from './auth-context';
 
 // Garde d'interface uniquement : l'autorisation réelle est appliquée par l'API et la RLS.
 export function RequireAuth({ roles }: { roles?: AppRole[] }) {
