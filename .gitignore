@@ -1,0 +1,18 @@
+node_modules/
+dist/
+coverage/
+*.log
+
+# Secrets — jamais commités (checklist sécurité : scan de secrets)
+.env
+.env.*
+!.env.example
+
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/
+
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json

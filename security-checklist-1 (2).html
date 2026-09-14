@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSec Checklist — Salve Italia</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #080c10;
+    --surface: #0d1117;
+    --border: #1a2332;
+    --border-bright: #243044;
+    --text: #c9d1d9;
+    --muted: #5a6a7e;
+    --accent-green: #00ff88;
+    --accent-cyan: #00d4ff;
+    --accent-orange: #ff8c42;
+    --accent-red: #ff4757;
+    --accent-purple: #bd5fff;
+    --accent-yellow: #ffd93d;
+    --glow-green: rgba(0,255,136,0.12);
+    --glow-cyan: rgba(0,212,255,0.12);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID BACKGROUND */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* HEADER */
+  header {
+    padding: 60px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .header-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent-green);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header-tag::before {
+    content: '';
+    width: 24px; height: 1px;
+    background: var(--accent-green);
+  }
+
+  h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
+
+  h1 .highlight {
+    color: var(--accent-cyan);
+    text-shadow: 0 0 40px rgba(0,212,255,0.4);
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 300;
+  }
+
+  /* SCORE BADGE */
+  .score-bar {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  .badge-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    animation: pulse 2s ease infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.8); }
+  }
+
+  /* SECTION */
+  .section {
+    margin-bottom: 40px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-icon {
+    width: 36px; height: 36px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .section-count {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* CHECKLIST ITEMS */
+  .checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .item:hover {
+    border-color: var(--border-bright);
+    transform: translateX(3px);
+  }
+
+  .item.checked {
+    opacity: 0.55;
+  }
+
+  .item.checked::before { opacity: 1; }
+
+  .checkbox {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--muted);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.2s;
+    font-size: 11px;
+  }
+
+  .item.checked .checkbox {
+    border-color: currentColor;
+    background: currentColor;
+    color: white;
+  }
+
+  .item-content {
+    flex: 1;
+  }
+
+  .item-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 3px;
+    line-height: 1.4;
+  }
+
+  .item-desc {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.5;
+  }
+
+  .item-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    border: 1px solid;
+    white-space: nowrap;
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 2px;
+  }
+
+  /* COLORS PER CATEGORY */
+  .cat-auth   { --c: var(--accent-cyan);   --cb: var(--glow-cyan); }
+  .cat-data   { --c: var(--accent-green);  --cb: var(--glow-green); }
+  .cat-network{ --c: var(--accent-orange); --cb: rgba(255,140,66,0.1); }
+  .cat-mobile { --c: var(--accent-purple); --cb: rgba(189,95,255,0.1); }
+  .cat-ai     { --c: var(--accent-yellow); --cb: rgba(255,217,61,0.08); }
+  .cat-infra  { --c: var(--accent-red);    --cb: rgba(255,71,87,0.1); }
+  .cat-code   { --c: #00bcd4;              --cb: rgba(0,188,212,0.08); }
+  .cat-archi  { --c: #a78bfa;              --cb: rgba(167,139,250,0.08); }
+
+  .item:hover  { background: color-mix(in srgb, var(--surface), var(--c) 4%); }
+  .item.checked::before { background: var(--c); }
+  .item .checkbox { color: var(--c); }
+  .item .item-tag { color: var(--c); border-color: color-mix(in srgb, var(--c), transparent 60%); background: var(--cb); }
+  .section-icon { background: var(--cb); color: var(--c); border: 1px solid color-mix(in srgb, var(--c), transparent 70%); }
+
+  /* ARCHITECTURE DIAGRAM */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .arch-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .arch-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--c);
+  }
+
+  .arch-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--c);
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+
+  .arch-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: white;
+  }
+
+  .arch-items {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .arch-items li {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+  }
+
+  .arch-items li::before {
+    content: '›';
+    color: var(--c);
+    flex-shrink: 0;
+  }
+
+  /* RESOURCES */
+  .resources-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  .resource-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+
+  .resource-category {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    color: var(--c);
+  }
+
+  .resource-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .resource-list li {
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .resource-list a {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+
+  .resource-list a:hover { color: var(--c); }
+
+  .resource-desc {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* AI SECTION */
+  .ai-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .ai-card {
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    border-radius: 8px;
+    padding: 20px;
+    position: relative;
+  }
+
+  .ai-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .ai-emoji { font-size: 20px; }
+
+  .ai-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+  }
+
+  .ai-card-body {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .ai-tool {
+    display: inline-block;
+    background: rgba(255,217,61,0.08);
+    border: 1px solid rgba(255,217,61,0.2);
+    color: var(--accent-yellow);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    margin: 2px 2px 0 0;
+  }
+
+  /* PROGRESS BAR */
+  .progress-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .progress-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .progress-bar-wrap {
+    flex: 1;
+    min-width: 200px;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
+    border-radius: 3px;
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+
+  .progress-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-green);
+    white-space: nowrap;
+  }
+
+  /* DIVIDER */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 48px 0;
+  }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  /* CODE BLOCK */
+  .code-block {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-cyan);
+    border-radius: 4px;
+    padding: 14px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent-cyan);
+    margin-top: 12px;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.6;
+  }
+
+  .note-box {
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    border-left: 3px solid var(--accent-orange);
+    border-radius: 4px;
+    padding: 14px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 600px) {
+    h1 { font-size: 28px; }
+    .arch-grid { grid-template-columns: 1fr; }
+    .progress-section { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-tag">Agent Cybersécurité · v2.1 — Adapté au projet</div>
+    <h1>Checklist <span class="highlight">Sécurité</span><br>Salve Italia</h1>
+    <p class="subtitle">// React + Vite · Node/Express · Supabase (Postgres + Auth + RLS) · Claude API · Vercel + Railway/Render</p>
+    <div class="score-bar">
+      <div class="badge"><div class="badge-dot" style="background:var(--accent-green)"></div>CRITIQUE</div>
+      <div class="badge"><div class="badge-dot" style="background:var(--accent-orange)"></div>IMPORTANT</div>
+      <div class="badge"><div class="badge-dot" style="background:var(--accent-cyan)"></div>BEST PRACTICE</div>
+    </div>
+  </header>
+
+  <div class="note-box">
+    Cette checklist a été adaptée à partir d'un modèle générique pour coller à l'architecture réelle de Salve Italia
+    (cf. cahier des charges — sections 17 à 19) : pas d'app mobile native, pas de paiement en ligne, comptes créés
+    uniquement par l'admin, agent IA consulaire, moteur de test configurable, documents étudiants sensibles.
+    Les items retirés (OAuth social, sécurité mobile native, paiement) ne sont pas pertinents pour ce périmètre V1.
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-section">
+    <span class="progress-label">Score de sécurité :</span>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <span class="progress-count" id="progressCount">0 / 0</span>
+  </div>
+
+  <!-- ══════════ ARCHITECTURE ══════════ -->
+  <div class="section-label">01 — Architecture sécurisée (Salve Italia)</div>
+  <div class="arch-grid cat-archi" style="--c: var(--accent-cyan); --cb: var(--glow-cyan);">
+
+    <div class="arch-card cat-auth" style="--c:var(--accent-cyan);--cb:var(--glow-cyan);">
+      <div class="arch-num">COUCHE 01</div>
+      <div class="arch-title">🌐 Frontend React + Vite</div>
+      <ul class="arch-items">
+        <li>Zero trust : score, correct_answer et prompt consul jamais calculés côté client</li>
+        <li>Uniquement VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY exposées</li>
+        <li>Zéro clé service, zéro clé Anthropic dans le bundle</li>
+        <li>CSP stricte, pas de script tiers superflu sur les pages sensibles</li>
+        <li>Sanitization des réponses libres et transcriptions avant envoi</li>
+      </ul>
+    </div>
+
+    <div class="arch-card cat-network" style="--c:var(--accent-orange);--cb:rgba(255,140,66,0.1);">
+      <div class="arch-num">COUCHE 02</div>
+      <div class="arch-title">🔀 API Backend Node.js/Express</div>
+      <ul class="arch-items">
+        <li>JWT Supabase validé sur chaque route, rôle jamais lu depuis le client</li>
+        <li>Rate limiting différencié par route (voir §04)</li>
+        <li>CORS restreint au(x) domaine(s) Vercel du site</li>
+        <li>Endpoints IA (/embassy-agent, génération de questions) isolés et quotés</li>
+      </ul>
+    </div>
+
+    <div class="arch-card cat-code" style="--c:#00bcd4;--cb:rgba(0,188,212,0.08);">
+      <div class="arch-num">COUCHE 03</div>
+      <div class="arch-title">⚙️ Services métier</div>
+      <ul class="arch-items">
+        <li>Un service = une responsabilité (Auth, TestEngine, EmbassySession, Document, AI)</li>
+        <li>ANTHROPIC_API_KEY confinée à AIService, nulle part ailleurs</li>
+        <li>Aucune requête SQL par concaténation — client Supabase paramétré uniquement</li>
+        <li>Logs structurés sans PII (voir §03)</li>
+      </ul>
+    </div>
+
+    <div class="arch-card cat-infra" style="--c:var(--accent-red);--cb:rgba(255,71,87,0.1);">
+      <div class="arch-num">COUCHE 04</div>
+      <div class="arch-title">🗄️ Supabase / Postgres</div>
+      <ul class="arch-items">
+        <li>RLS activé sur toutes les tables sans exception</li>
+        <li>Un étudiant : ses propres lignes uniquement ; un enseignant : ses classes</li>
+        <li>Backups automatiques vérifiés (fréquence, rétention)</li>
+        <li>audit_logs pour toute action admin sensible</li>
+      </ul>
+    </div>
+
+    <div class="arch-card cat-mobile" style="--c:var(--accent-purple);--cb:rgba(189,95,255,0.1);">
+      <div class="arch-num">COUCHE 05</div>
+      <div class="arch-title">🔐 Auth & Sessions</div>
+      <ul class="arch-items">
+        <li>Hachage des mots de passe géré nativement par Supabase Auth</li>
+        <li>Comptes créés uniquement par l'admin, pas de self-registration</li>
+        <li>MFA obligatoire pour les comptes admin</li>
+        <li>Déconnexion automatique après inactivité (utile sur poste partagé)</li>
+      </ul>
+    </div>
+
+    <div class="arch-card cat-ai" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08);">
+      <div class="arch-num">COUCHE 06</div>
+      <div class="arch-title">☁️ Déploiement Vercel / Railway</div>
+      <ul class="arch-items">
+        <li>Variables d'env dans les dashboards Vercel/Railway, jamais commitées</li>
+        <li>HTTPS + HSTS natifs, activés</li>
+        <li>Staging obligatoire avant mise en production</li>
+        <li>Clés dev/staging/prod séparées (projets Supabase distincts si possible)</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <hr class="divider">
+
+  <!-- ══════════ CHECKLIST AUTH ══════════ -->
+  <div class="section cat-auth">
+    <div class="section-header">
+      <div class="section-icon">🔐</div>
+      <div class="section-title">Authentification & Comptes</div>
+      <div class="section-count">AUTH</div>
+    </div>
+    <div class="checklist">
+      <div class="item cat-auth" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Comptes créés uniquement par l'admin, aucune auto-inscription</div>
+          <div class="item-desc">EF-01 : email + mot de passe temporaire ou lien d'invitation, jamais de formulaire d'inscription public pour les étudiants.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-auth" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Changement de mot de passe obligatoire à la première connexion</div>
+          <div class="item-desc">EF-02 : le mot de passe temporaire distribué par l'admin ne doit jamais rester utilisable durablement.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+      <div class="item cat-auth" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">MFA obligatoire pour les comptes admin</div>
+          <div class="item-desc">L'admin a accès à tous les rapports d'entretien et documents étudiants — le compte le plus sensible du système.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-auth" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Protection anti brute-force sur la connexion</div>
+          <div class="item-desc">Supabase Auth limite déjà les tentatives ; ajouter un rate limit applicatif + captcha si un formulaire de login custom est utilisé.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-auth" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Réinitialisation de mot de passe via lien à usage unique</div>
+          <div class="item-desc">Géré nativement par Supabase Auth : token à durée de vie courte, invalidé après utilisation.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+      <div class="item cat-auth" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Hachage des mots de passe : ne jamais le réimplémenter soi-même</div>
+          <div class="item-desc">Supabase Auth gère le hachage nativement (bcrypt). Aucun stockage de mot de passe custom côté backend Express.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-auth" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Session invalidée à la déconnexion et à la suspension d'un compte</div>
+          <div class="item-desc">EF-03 : un compte suspendu par l'admin doit perdre l'accès immédiatement, pas seulement à la prochaine expiration de token.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ CHECKLIST DATA ══════════ -->
+  <div class="section cat-data">
+    <div class="section-header">
+      <div class="section-icon">🗄️</div>
+      <div class="section-title">Protection des données & confidentialité</div>
+      <div class="section-count">DATA</div>
+    </div>
+    <div class="checklist">
+      <div class="item cat-data" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">RLS activé sur toutes les tables sensibles</div>
+          <div class="item-desc">simulations, embassy_sessions, embassy_messages, student_documents, student_profiles, leads — cf. §19.12 du cahier des charges.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-data" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Documents étudiants dans un bucket Supabase Storage privé</div>
+          <div class="item-desc">Passeport, diplômes, justificatifs financiers : jamais de bucket public, accès uniquement via URL signée à durée limitée.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-data" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Profil étudiant : fourchette budgétaire, jamais un montant exact</div>
+          <div class="item-desc">Minimisation appliquée à student_profiles.budget_range — évite de stocker une donnée financière précise et sensible (cf. §9.1 cahier des charges).</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+      <div class="item cat-data" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Logs applicatifs sans données personnelles identifiables</div>
+          <div class="item-desc">Pas de nom, email ni transcription complète dans les logs serveur — uniquement des IDs internes.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+      <div class="item cat-data" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Droit à la suppression d'une session d'entretien</div>
+          <div class="item-desc">EF-58 : l'étudiant peut supprimer un transcript et son rapport ; définir une politique de rétention par défaut pour les sessions non supprimées.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+      <div class="item cat-data" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Backups chiffrés testés régulièrement</div>
+          <div class="item-desc">Supabase chiffre at-rest par défaut — vérifier la fréquence de backup incluse dans le plan souscrit et tester une restauration.</div>
+        </div>
+        <div class="item-tag">BEST PRACTICE</div>
+      </div>
+      <div class="item cat-data" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Cadre légal applicable au Congo à confirmer</div>
+          <div class="item-desc">ENF-09 : pas d'obligation RGPD stricto sensu identifiée, mais les mêmes principes de minimisation et de rétention sont appliqués par précaution.</div>
+        </div>
+        <div class="item-tag">🔶 À VALIDER</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ CHECKLIST NETWORK ══════════ -->
+  <div class="section cat-network">
+    <div class="section-header">
+      <div class="section-icon">🌐</div>
+      <div class="section-title">Réseau, API & Headers HTTP</div>
+      <div class="section-count">NETWORK</div>
+    </div>
+    <div class="checklist">
+      <div class="item cat-network" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Content Security Policy (CSP) configurée</div>
+          <div class="item-desc">Bloque XSS, clickjacking, injections inline. Tester sur csp-evaluator.withgoogle.com</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-network" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Headers de sécurité HTTP complets</div>
+          <div class="item-desc">X-Frame-Options: DENY · X-Content-Type-Options: nosniff · HSTS · Referrer-Policy</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+      <div class="item cat-network" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Protection CSRF sur toutes les mutations</div>
+          <div class="item-desc">Création de compte, dépôt de document, envoi de message à l'agent : jamais de mutation via une simple requête GET.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-network" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Rate limiting différencié par endpoint</div>
+          <div class="item-desc">/login : 5/min · /embassy-agent : quota par étudiant (EF-59) · /questions (écriture) : enseignant/admin uniquement · /documents/upload : limité.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-network" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">TLS 1.2+ minimum, certificat valide & renouvelé</div>
+          <div class="item-desc">Natif sur Vercel, Railway/Render et Supabase — vérifier qu'aucun sous-domaine ne retombe en HTTP.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-network" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Pas de données sensibles dans les URLs</div>
+          <div class="item-desc">Token de session, ID de document → jamais en query string. Passer par le body (POST) ou l'en-tête Authorization.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+      <div class="item cat-network" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">WAF non indispensable au lancement, mais disponible si besoin</div>
+          <div class="item-desc">Cloudflare gratuit en façade de Vercel reste une option low-cost à activer si le trafic ou les tentatives d'abus l'exigent.</div>
+        </div>
+        <div class="item-tag">BEST PRACTICE</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ CHECKLIST CODE ══════════ -->
+  <div class="section cat-code" style="--c:#00bcd4;--cb:rgba(0,188,212,0.08);">
+    <div class="section-header">
+      <div class="section-icon">💻</div>
+      <div class="section-title">Sécurité du code & Dépendances</div>
+      <div class="section-count">CODE</div>
+    </div>
+    <div class="checklist">
+      <div class="item cat-code" onclick="toggle(this)" style="--c:#00bcd4;--cb:rgba(0,188,212,0.08);">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">SAST : analyse statique du code automatisée</div>
+          <div class="item-desc">Semgrep (gratuit) ou CodeQL si le repo est sur GitHub — suffisant pour un projet de cette taille.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+      <div class="item cat-code" onclick="toggle(this)" style="--c:#00bcd4;--cb:rgba(0,188,212,0.08);">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Dépendances auditées (npm audit / Dependabot)</div>
+          <div class="item-desc">Lancer à chaque PR. Activer les alertes automatiques GitHub Dependabot sur le repo.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+      <div class="item cat-code" onclick="toggle(this)" style="--c:#00bcd4;--cb:rgba(0,188,212,0.08);">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Scan de secrets avant commit</div>
+          <div class="item-desc">En particulier ANTHROPIC_API_KEY et SUPABASE_SERVICE_ROLE_KEY. Hook pre-commit (git-secrets ou équivalent) obligatoire.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-code" onclick="toggle(this)" style="--c:#00bcd4;--cb:rgba(0,188,212,0.08);">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Revue de code avant fusion, même en solo</div>
+          <div class="item-desc">Checklist minimale : inputs validés, pas de clé en dur, pas de log sensible, requêtes paramétrées.</div>
+        </div>
+        <div class="item-tag">BEST PRACTICE</div>
+      </div>
+      <div class="item cat-code" onclick="toggle(this)" style="--c:#00bcd4;--cb:rgba(0,188,212,0.08);">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Pas d'erreurs/stack traces détaillées en production</div>
+          <div class="item-desc">Centraliser les erreurs côté serveur. Retourner des messages génériques au frontend.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ CHECKLIST POSTES PARTAGÉS ══════════ -->
+  <div class="section cat-mobile">
+    <div class="section-header">
+      <div class="section-icon">🖥️</div>
+      <div class="section-title">Postes partagés & accès public</div>
+      <div class="section-count">ACCÈS</div>
+    </div>
+    <div class="checklist">
+      <div class="item cat-mobile" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Déconnexion automatique après inactivité</div>
+          <div class="item-desc">EF-05 : particulièrement utile si des étudiants se connectent depuis un cybercafé ou un ordinateur familial partagé.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+      <div class="item cat-mobile" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Pas de "se souvenir de moi" activé par défaut</div>
+          <div class="item-desc">Une session longue durée par défaut est risquée sur un poste non reconnu comme personnel.</div>
+        </div>
+        <div class="item-tag">BEST PRACTICE</div>
+      </div>
+      <div class="item cat-mobile" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Rappel de déconnexion affiché en fin de simulation</div>
+          <div class="item-desc">Un message simple après un entretien consulaire ou un dépôt de document : penser à se déconnecter sur un poste partagé.</div>
+        </div>
+        <div class="item-tag">BEST PRACTICE</div>
+      </div>
+      <div class="item cat-mobile" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Documents jamais mis en cache navigateur de façon persistante</div>
+          <div class="item-desc">Cache-Control: no-store sur les routes de téléchargement de documents étudiants.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+      <div class="item cat-mobile" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Historique de connexion visible par l'étudiant</div>
+          <div class="item-desc">Dernière connexion connue, pour repérer un accès non autorisé. À évaluer selon l'effort de développement disponible.</div>
+        </div>
+        <div class="item-tag">BEST PRACTICE</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ CHECKLIST INTÉGRITÉ DES TESTS ══════════ -->
+  <div class="section cat-archi">
+    <div class="section-header">
+      <div class="section-icon">🧩</div>
+      <div class="section-title">Intégrité des tests & anti-triche</div>
+      <div class="section-count">TESTS</div>
+    </div>
+    <div class="checklist">
+      <div class="item cat-archi" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">La bonne réponse n'est jamais envoyée au frontend avant validation</div>
+          <div class="item-desc">correct_answer reste côté serveur jusqu'à la soumission de la réponse par l'étudiant — sinon visible via l'inspecteur réseau.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-archi" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Le chronomètre fait autorité côté serveur</div>
+          <div class="item-desc">Le temps restant est recalculé depuis started_at en base, jamais depuis l'horloge du navigateur — empêche de prolonger un examen en manipulant le client.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-archi" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">"Pas de retour en arrière" appliqué côté API, pas seulement dans l'UI</div>
+          <div class="item-desc">EF-09 : une question déjà répondue doit être rejetée par le backend si elle est re-soumise, même en manipulant l'URL ou l'état local.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-archi" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Questions générées par IA jamais publiées automatiquement</div>
+          <div class="item-desc">EF-07 : validation humaine obligatoire par un enseignant avant intégration à la banque active, y compris sur l'exactitude de la bonne réponse.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-archi" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Détection de perte de focus prolongée en mode examen</div>
+          <div class="item-desc">Journalisée pour l'enseignant sans bloquer automatiquement la session, pour rester tolérant à une connexion instable (ENF-03).</div>
+        </div>
+        <div class="item-tag">BEST PRACTICE</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ CHECKLIST INFRA ══════════ -->
+  <div class="section cat-infra">
+    <div class="section-header">
+      <div class="section-icon">☁️</div>
+      <div class="section-title">Infrastructure & Monitoring</div>
+      <div class="section-count">INFRA</div>
+    </div>
+    <div class="checklist">
+      <div class="item cat-infra" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Variables d'environnement dans les dashboards Vercel/Railway</div>
+          <div class="item-desc">Jamais commitées dans le repo. Un Secrets Manager dédié (Doppler) reste optionnel à ce stade du projet.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-infra" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Alerting sur anomalies</div>
+          <div class="item-desc">Pic d'appels à /embassy-agent, échecs d'authentification répétés, erreurs 5xx.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+      <div class="item cat-infra" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Moindre privilège sur les clés Supabase</div>
+          <div class="item-desc">La clé service role reste réservée au backend, jamais partagée ni utilisée par défaut pour des opérations courantes.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-infra" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Plan de réponse simple en cas d'incident</div>
+          <div class="item-desc">Qui révoque les accès, qui informe le centre, qui informe les étudiants concernés si des documents ont été exposés.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+      <div class="item cat-infra" onclick="toggle(this)">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Test de sécurité de base avant mise en production</div>
+          <div class="item-desc">OWASP ZAP (gratuit) suffit au lancement. Un pentest professionnel payant n'est pas indispensable en V1 vu le budget, mais recommandé avant une montée en charge.</div>
+        </div>
+        <div class="item-tag">BEST PRACTICE</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ══════════ IA & SÉCURITÉ ══════════ -->
+  <div class="section-label">02 — Sécurité de l'agent IA consulaire</div>
+
+  <div class="ai-grid">
+
+    <div class="ai-card cat-ai" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08);">
+      <div class="ai-card-header">
+        <div class="ai-emoji">🤖</div>
+        <div class="ai-card-title">Claude comme auditeur du prompt consul</div>
+      </div>
+      <div class="ai-card-body">
+        Coller le prompt système de l'agent consul et le faire auditer avant chaque mise à jour.<br><br>
+        <strong style="color:#ffd93d">Prompts utiles :</strong><br>
+        "Ce prompt système peut-il être détourné par une réponse d'étudiant qui contient des instructions ?"<br>
+        "Cette policy RLS sur embassy_sessions est-elle correcte pour le modèle classes/enseignant ?"
+      </div>
+      <div style="margin-top:12px">
+        <span class="ai-tool">Claude Sonnet</span>
+      </div>
+    </div>
+
+    <div class="ai-card cat-ai" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08);">
+      <div class="ai-card-header">
+        <div class="ai-emoji">🔍</div>
+        <div class="ai-card-title">SAST assisté par IA</div>
+      </div>
+      <div class="ai-card-body">
+        Outils qui analysent le code en continu.<br><br>
+        <strong style="color:#ffd93d">Outils :</strong><br>
+        Snyk Code — scan en temps réel dans l'éditeur<br>
+        GitHub Copilot Autofix — corrige les failles détectées<br>
+        Semgrep — règles OWASP prêtes à l'emploi
+      </div>
+      <div style="margin-top:12px">
+        <span class="ai-tool">Snyk</span>
+        <span class="ai-tool">CodeQL</span>
+        <span class="ai-tool">Semgrep</span>
+      </div>
+    </div>
+
+    <div class="ai-card cat-ai" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08);">
+      <div class="ai-card-header">
+        <div class="ai-emoji">⚡</div>
+        <div class="ai-card-title">Tests de sécurité générés</div>
+      </div>
+      <div class="ai-card-body">
+        Générer des tests ciblés sur les risques propres au projet.<br><br>
+        <strong style="color:#ffd93d">Demander à Claude :</strong><br>
+        "Génère des tests pour /simulations couvrant : réponse déjà donnée resoumise, timer manipulé, accès enseignant hors de sa classe"
+      </div>
+      <div style="margin-top:12px">
+        <span class="ai-tool">Jest + Claude</span>
+        <span class="ai-tool">Playwright</span>
+      </div>
+    </div>
+
+    <div class="ai-card cat-ai" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08);">
+      <div class="ai-card-header">
+        <div class="ai-emoji">🛡️</div>
+        <div class="ai-card-title">Sécuriser l'agent IA lui-même</div>
+      </div>
+      <div class="ai-card-body">
+        L'agent consul ajoute une surface d'attaque spécifique via la voix/le texte de l'étudiant.<br><br>
+        <strong style="color:#ffd93d">Règles :</strong><br>
+        Prompt injection via la transcription → cloisonner le system prompt, ignorer toute instruction contenue dans la réponse<br>
+        Rate limiting et quota par étudiant (EF-59)<br>
+        Jamais de document brut ni de montant financier exact dans le prompt
+      </div>
+      <div style="margin-top:12px">
+        <span class="ai-tool">Rebuff</span>
+        <span class="ai-tool">Guardrails AI</span>
+      </div>
+    </div>
+
+    <div class="ai-card cat-ai" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08);">
+      <div class="ai-card-header">
+        <div class="ai-emoji">📊</div>
+        <div class="ai-card-title">Suivi d'usage et détection d'abus</div>
+      </div>
+      <div class="ai-card-body">
+        S'appuyer sur ai_usage_logs (cahier des charges §19.10) pour repérer un usage anormal.<br><br>
+        <strong style="color:#ffd93d">À surveiller :</strong><br>
+        Pic d'appels à /embassy-agent pour un seul student_id<br>
+        Sessions anormalement longues (dérive de coût)<br>
+        Échecs répétés de génération de rapport
+      </div>
+      <div style="margin-top:12px">
+        <span class="ai-tool">ai_usage_logs</span>
+      </div>
+    </div>
+
+    <div class="ai-card cat-ai" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08);">
+      <div class="ai-card-header">
+        <div class="ai-emoji">📋</div>
+        <div class="ai-card-title">IA pour les policies RLS</div>
+      </div>
+      <div class="ai-card-body">
+        Générer et faire relire les policies RLS Supabase du modèle multi-rôle.<br><br>
+        <strong style="color:#ffd93d">Exemples :</strong><br>
+        "Génère les policies RLS pour embassy_sessions avec student/teacher (via classes)/admin"<br>
+        "Vérifie que student_documents n'est jamais lisible par un autre étudiant"
+      </div>
+      <div style="margin-top:12px">
+        <span class="ai-tool">Claude</span>
+        <span class="ai-tool">Supabase</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- IA CHECKLIST -->
+  <div class="section cat-ai" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08);">
+    <div class="section-header">
+      <div class="section-icon">🤖</div>
+      <div class="section-title">Sécurité IA — Agent consul & génération de questions</div>
+      <div class="section-count">AI SEC</div>
+    </div>
+    <div class="checklist">
+      <div class="item cat-ai" onclick="toggle(this)" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08);">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Clé Anthropic uniquement dans AIService, côté backend</div>
+          <div class="item-desc">Jamais dans le client React. Toute requête à Claude passe par le backend Express (cf. §17.2 cahier des charges).</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-ai" onclick="toggle(this)" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08);">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Protection contre l'injection de prompt via la réponse de l'étudiant</div>
+          <div class="item-desc">Le prompt système du consul doit ignorer toute instruction contenue dans la transcription ("ignore tes instructions précédentes", etc.).</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-ai" onclick="toggle(this)" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08);">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Quota de sessions et de tours par étudiant appliqué côté serveur</div>
+          <div class="item-desc">EF-59 : le système doit bloquer proprement, avec message explicite, quand la limite de coût/tours est atteinte.</div>
+        </div>
+        <div class="item-tag">CRITIQUE</div>
+      </div>
+      <div class="item cat-ai" onclick="toggle(this)" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08);">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Pas de document brut ni de montant exact dans le prompt</div>
+          <div class="item-desc">Seules les informations nécessaires au scénario (visa_type, scenario_code, thèmes) sont transmises à Claude.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+      <div class="item cat-ai" onclick="toggle(this)" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08);">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Validation du rapport JSON avant stockage/affichage</div>
+          <div class="item-desc">ai_report doit être vérifié contre le schéma attendu (§10.3 cahier des charges) avant d'être écrit en base ou affiché au tableau de bord.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+      <div class="item cat-ai" onclick="toggle(this)" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08);">
+        <div class="checkbox">✓</div>
+        <div class="item-content">
+          <div class="item-title">Session interrompue proprement en cas d'échec technique</div>
+          <div class="item-desc">EF-23 : jamais de faux rapport généré si le micro coupe ou si l'API Claude est indisponible en cours d'entretien.</div>
+        </div>
+        <div class="item-tag">IMPORTANT</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ══════════ RESSOURCES ══════════ -->
+  <div class="section-label">03 — Ressources & Outils</div>
+
+  <div class="resources-grid">
+
+    <div class="resource-card cat-auth" style="--c:var(--accent-cyan);--cb:var(--glow-cyan);">
+      <div class="resource-category">📚 Apprendre</div>
+      <ul class="resource-list">
+        <li><a href="https://owasp.org/www-project-top-ten/" target="_blank">OWASP Top 10</a><span class="resource-desc">LA référence</span></li>
+        <li><a href="https://portswigger.net/web-security" target="_blank">PortSwigger Academy</a><span class="resource-desc">Gratuit + labs</span></li>
+        <li><a href="https://cheatsheetseries.owasp.org/" target="_blank">OWASP Cheat Sheets</a><span class="resource-desc">Par technologie</span></li>
+        <li><a href="https://tryhackme.com" target="_blank">TryHackMe</a><span class="resource-desc">Pratique gamifiée</span></li>
+      </ul>
+    </div>
+
+    <div class="resource-card cat-code" style="--c:#00bcd4;--cb:rgba(0,188,212,0.08);">
+      <div class="resource-category">🛠️ Scan & Audit</div>
+      <ul class="resource-list">
+        <li><a href="https://snyk.io" target="_blank">Snyk</a><span class="resource-desc">Deps + Code</span></li>
+        <li><a href="https://semgrep.dev" target="_blank">Semgrep</a><span class="resource-desc">SAST gratuit</span></li>
+        <li><a href="https://www.zaproxy.org/" target="_blank">OWASP ZAP</a><span class="resource-desc">Pentest web</span></li>
+        <li><a href="https://securityheaders.com" target="_blank">SecurityHeaders.com</a><span class="resource-desc">Tester les headers</span></li>
+      </ul>
+    </div>
+
+    <div class="resource-card cat-infra" style="--c:var(--accent-red);--cb:rgba(255,71,87,0.1);">
+      <div class="resource-category">🔑 Gestion des secrets</div>
+      <ul class="resource-list">
+        <li><a href="https://doppler.com" target="_blank">Doppler</a><span class="resource-desc">Optionnel à ce stade</span></li>
+        <li><a href="https://github.com/trufflesecurity/trufflehog" target="_blank">TruffleHog</a><span class="resource-desc">Scan repo git</span></li>
+        <li><a href="https://github.com/awslabs/git-secrets" target="_blank">git-secrets</a><span class="resource-desc">Hook pre-commit</span></li>
+        <li><a href="https://vercel.com/docs/environment-variables" target="_blank">Vercel Env Vars</a><span class="resource-desc">Suffisant en V1</span></li>
+      </ul>
+    </div>
+
+    <div class="resource-card cat-network" style="--c:var(--accent-orange);--cb:rgba(255,140,66,0.1);">
+      <div class="resource-category">🧪 Tests en ligne</div>
+      <ul class="resource-list">
+        <li><a href="https://csp-evaluator.withgoogle.com/" target="_blank">CSP Evaluator</a><span class="resource-desc">Google</span></li>
+        <li><a href="https://www.ssllabs.com/ssltest/" target="_blank">SSL Labs</a><span class="resource-desc">TLS check</span></li>
+        <li><a href="https://observatory.mozilla.org/" target="_blank">Mozilla Observatory</a><span class="resource-desc">Score global</span></li>
+        <li><a href="https://haveibeenpwned.com/" target="_blank">HaveIBeenPwned API</a><span class="resource-desc">Check credentials</span></li>
+      </ul>
+    </div>
+
+    <div class="resource-card cat-ai" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08);">
+      <div class="resource-category">🤖 Sécurité IA</div>
+      <ul class="resource-list">
+        <li><a href="https://owasp.org/www-project-llm-ai-security-and-governance-checklist/" target="_blank">OWASP LLM Top 10</a><span class="resource-desc">Vulns IA</span></li>
+        <li><a href="https://github.com/protectai/rebuff" target="_blank">Rebuff</a><span class="resource-desc">Anti-prompt injection</span></li>
+        <li><a href="https://docs.guardrailsai.com/" target="_blank">Guardrails AI</a><span class="resource-desc">Output validation</span></li>
+        <li><a href="https://learnprompting.org/docs/prompt_hacking/intro" target="_blank">Prompt Hacking Guide</a><span class="resource-desc">Comprendre les risques</span></li>
+      </ul>
+    </div>
+
+    <div class="resource-card cat-infra" style="--c:var(--accent-red);--cb:rgba(255,71,87,0.1);">
+      <div class="resource-category">🗄️ Supabase & RLS</div>
+      <ul class="resource-list">
+        <li><a href="https://supabase.com/docs/guides/auth/row-level-security" target="_blank">Guide RLS Supabase</a><span class="resource-desc">Référence officielle</span></li>
+        <li><a href="https://supabase.com/docs/guides/platform/going-into-prod" target="_blank">Checklist mise en prod</a><span class="resource-desc">Officielle Supabase</span></li>
+        <li><a href="https://supabase.com/docs/guides/storage/security/access-control" target="_blank">Storage — contrôle d'accès</a><span class="resource-desc">Buckets privés, URLs signées</span></li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- CODE EXAMPLE -->
+  <div style="margin-top: 40px;">
+    <div class="section-label">04 — Workflow IA recommandé pour Salve Italia</div>
+    <div class="arch-card cat-ai" style="--c:var(--accent-yellow);--cb:rgba(255,217,61,0.08); border-radius:8px;">
+      <div class="arch-title" style="font-size:15px; margin-bottom:14px;">📌 Utiliser Claude comme agent sécurité sur ce projet précis</div>
+      <div class="code-block">// 1. AVANT DE CODER → policies RLS du modèle multi-rôle
+"Donne-moi les policies RLS Supabase pour embassy_sessions avec les rôles
+ student / teacher (via classes/class_students) / admin"
+
+// 2. PENDANT LE CODE → audit ciblé sur les points sensibles du projet
+"Ce prompt système du consul est-il vulnérable à une injection via
+ la réponse de l'étudiant ?"
+"La route /embassy-agent applique-t-elle bien le quota EF-59 avant
+ d'appeler Claude ?"
+
+// 3. AVANT DE COMMIT → checklist spécifique au moteur de test
+"Vérifie que correct_answer n'est jamais renvoyé au frontend avant
+ la fin de la simulation"
+"Y a-t-il une clé ANTHROPIC_API_KEY ou SUPABASE_SERVICE_ROLE_KEY
+ exposée dans ce diff ?"
+
+// 4. AVANT DÉPLOIEMENT → revue finale
+"Génère les headers de sécurité pour ce backend Express déployé
+ sur Railway"
+"Écris les tests couvrant : réponse déjà donnée resoumise, timer
+ manipulé côté client, accès enseignant hors de sa classe"
+
+// 5. EN PRODUCTION → monitoring et réponse
+"Ce pic d'appels à /embassy-agent pour un seul student_id est-il
+ un usage anormal ?"
+"Prépare un message simple pour le centre en cas d'incident touchant
+ des documents étudiants"</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function toggle(el) {
+    el.classList.toggle('checked');
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const all = document.querySelectorAll('.item');
+    const checked = document.querySelectorAll('.item.checked');
+    const pct = all.length ? Math.round((checked.length / all.length) * 100) : 0;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressCount').textContent = checked.length + ' / ' + all.length + ' (' + pct + '%)';
+  }
+
+  updateProgress();
+</script>
+</body>
+</html>
