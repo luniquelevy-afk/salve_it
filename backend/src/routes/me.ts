@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { authOf, isAdminMfaMissing, requireAuth } from '../middleware/auth.js';
 import { completePasswordChange, getAccount } from '../services/accounts.js';
 import { getRetentionPolicy } from '../services/retention.js';
+import { getSessionSettings } from '../services/session-settings.js';
 
 export const passwordSchema = z
   .string()
@@ -28,6 +29,11 @@ meRouter.get('/', async (req, res) => {
 // ENF-11 : durées de conservation affichées aux étudiants là où ils confient des données sensibles.
 meRouter.get('/retention-policy', async (_req, res) => {
   res.json(await getRetentionPolicy());
+});
+
+// EF-05 : durée d'inactivité appliquée par le frontend, lisible par tout compte connecté.
+meRouter.get('/session-settings', async (_req, res) => {
+  res.json(await getSessionSettings());
 });
 
 meRouter.post('/password', passwordLimiter, async (req, res) => {

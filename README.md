@@ -78,9 +78,9 @@ RLS_TEST=1 pnpm --filter @salve/backend test
 - **Rôle lu en base** à chaque requête API, jamais depuis le client ; `requireAuth → requirePasswordChanged → requireRole → requireAdminMfa`.
 - **RLS** : étudiant = ses lignes ; enseignant = étudiants de ses classes ; admin = tout, uniquement en session `aal2`. Un compte suspendu n'a plus aucun rôle en base, même avec un JWT encore valide.
 - **Écritures sur `profiles` et `audit_logs`** : backend uniquement (révoquées pour `authenticated`).
-- **Session** en `sessionStorage` (pas de « se souvenir de moi ») + déconnexion après `VITE_IDLE_TIMEOUT_MINUTES`.
+- **Session** en `sessionStorage` (pas de « se souvenir de moi ») + déconnexion après inactivité. La durée est **administrable** (`/admin/parametres`, EF-05) et lue par le frontend à la connexion ; `VITE_IDLE_TIMEOUT_MINUTES` ne sert plus que de repli avant chargement du réglage serveur.
 - Pas de cookie d'auth (jeton en en-tête `Authorization`) → pas de surface CSRF classique.
 
 ## Points ouverts (cf. CDC §22)
 
-Durée d'inactivité (30 min par défaut), nom commercial, cadre légal données personnelles, etc.
+Nom commercial, barèmes TOLC exacts, cadre légal des données personnelles (contexte congolais), licence de dénomination TOLC/CISIA, canaux de notification additionnels (WhatsApp/SMS), etc. La **durée d'inactivité** (§22 #5) est désormais administrable (`/admin/parametres`), défaut 30 min.

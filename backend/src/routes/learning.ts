@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { adminOnly, authOf, staffOnly, studentOnly } from '../middleware/auth.js';
 import { assertCanFollowStudent } from '../services/access.js';
 import { getAiSettings, listStudentAiUsage, setStudentAiLimits, updateAiSettings } from '../services/ai-limits.js';
+import { getSessionSettings, updateSessionSettings } from '../services/session-settings.js';
 import { recordAudit } from '../services/audit.js';
 import { getEmbassyProgress, getEmbassySessionForStaff } from '../services/embassy.js';
 import { createScenario, listScenarios, updateScenario } from '../services/embassy-scenarios.js';
@@ -164,6 +165,18 @@ adminLearningRouter.put('/ai-settings', writeLimiter, async (req, res) => {
 
 adminLearningRouter.get('/ai-usage', async (_req, res) => {
   res.json({ students: await listStudentAiUsage() });
+});
+
+// ── Session : durée d'inactivité (EF-05, §22 #5) ────────────
+adminLearningRouter.get('/session-settings', async (_req, res) => {
+  res.json(await getSessionSettings());
+});
+
+adminLearningRouter.put('/session-settings', writeLimiter, async (req, res) => {
+  const input = z
+    .strictObject({ idleTimeoutMinutes: z.number().int().min(1).max(240).nullable() })
+    .parse(req.body);
+  res.json(await updateSessionSettings(authOf(req).userId, input));
 });
 
 adminLearningRouter.put('/ai-usage/:studentId', writeLimiter, async (req, res) => {

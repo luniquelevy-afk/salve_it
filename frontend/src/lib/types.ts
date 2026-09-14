@@ -991,6 +991,14 @@ export interface RetentionPolicy {
   documentVersionsMonths: number | null;
 }
 
+// ── Réglages de session (EF-05, §22 #5) ─────────────────────
+export interface SessionSettings {
+  idleTimeoutMinutes: number;
+  configured: boolean;
+  defaultMinutes: number;
+  updatedAt: string;
+}
+
 // ── Gamification (§14) ──────────────────────────────────────
 export interface GamificationBadge {
   code: string;

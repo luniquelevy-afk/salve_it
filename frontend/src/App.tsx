@@ -4,6 +4,7 @@ import { AppShell } from './components/AppShell';
 import { SessionLayout } from './components/SessionLayout';
 import { AdminAiPage } from './pages/admin/AdminAiPage';
 import { AdminRetentionPage } from './pages/admin/AdminRetentionPage';
+import { AdminSessionSettingsPage } from './pages/admin/AdminSessionSettingsPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { ChangePasswordPage } from './pages/auth/ChangePasswordPage';
 import { LoginPage } from './pages/auth/LoginPage';
@@ -101,6 +102,7 @@ export function App() {
               <Route path="/admin/ia" element={<AdminAiPage />} />
               <Route path="/admin/checklist" element={<ChecklistPage />} />
               <Route path="/admin/conservation" element={<AdminRetentionPage />} />
+              <Route path="/admin/parametres" element={<AdminSessionSettingsPage />} />
             </Route>
           </Route>
         </Route>

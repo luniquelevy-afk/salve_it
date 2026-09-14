@@ -39,6 +39,7 @@ const NAV: Record<AppRole, { to: string; label: string }[]> = {
     { to: '/admin/conservation', label: 'Conservation des données' },
     { to: '/admin/checklist', label: 'Checklist visa' },
     { to: '/admin/site', label: 'Site public' },
+    { to: '/admin/parametres', label: 'Paramètres' },
   ],
 };
 
