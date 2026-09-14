@@ -991,6 +991,23 @@ export interface RetentionPolicy {
   documentVersionsMonths: number | null;
 }
 
+// ── Gamification (§14) ──────────────────────────────────────
+export interface GamificationBadge {
+  code: string;
+  label: string;
+  description: string;
+  earned: boolean;
+  awardedAt: string | null;
+}
+
+export interface Gamification {
+  streakDays: number;
+  weeklyGoal: { target: number; done: number; reached: boolean };
+  badges: GamificationBadge[];
+  earnedCount: number;
+  generatedAt: string;
+}
+
 export function homeFor(role: AppRole): string {
   return { student: '/etudiant', teacher: '/enseignant', admin: '/admin/tableau-de-bord' }[role];
 }

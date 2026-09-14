@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthProvider';
 import { AnnouncementsPanel } from '../../components/AnnouncementsPanel';
 import { ErrorBanner } from '../../components/ErrorBanner';
+import { GamificationPanel } from '../../components/GamificationPanel';
 import { LearningPathPanel } from '../../components/LearningPathPanel';
 import { ReadinessGauges } from '../../components/ReadinessGauges';
 import { StudentOverview } from '../../components/StudentOverview';
 import { api, ApiError } from '../../lib/api';
-import type { LearningPath, Readiness, StudentDashboardSummary } from '../../lib/types';
+import type { Gamification, LearningPath, Readiness, StudentDashboardSummary } from '../../lib/types';
 
 const SHORTCUTS = [
   { to: '/etudiant/cours', label: 'Cours' },
@@ -23,6 +24,7 @@ export function StudentDashboard() {
   const [path, setPath] = useState<LearningPath | null>(null);
   const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [summary, setSummary] = useState<StudentDashboardSummary | null>(null);
+  const [gamification, setGamification] = useState<Gamification | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
@@ -37,6 +39,10 @@ export function StudentDashboard() {
     api<StudentDashboardSummary>('/api/student/dashboard')
       .then(setSummary)
       .catch((err: unknown) => setSummaryError(err instanceof ApiError ? err.message : 'Impossible de charger vos indicateurs.'));
+    // Gamification (§14) : purement indicative, un échec reste silencieux.
+    api<Gamification>('/api/student/dashboard/gamification')
+      .then(setGamification)
+      .catch(() => undefined);
   }, []);
 
   return (
@@ -75,6 +81,7 @@ export function StudentDashboard() {
         )}
         <div className="space-y-6">
           {readiness && <ReadinessGauges readiness={readiness} />}
+          {gamification && <GamificationPanel data={gamification} />}
           <AnnouncementsPanel />
         </div>
       </div>

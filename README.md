@@ -28,6 +28,7 @@ Référence fonctionnelle : [SALVE_ITALIA_CAHIER_DES_CHARGES.md](SALVE_ITALIA_CA
 
 > **IA** : fournisseur choisi par `AI_PROVIDER` (`gemini` par défaut, `claude`, `fake`). Le palier gratuit de Gemini interdit l'envoi de données personnelles : développement avec données fictives uniquement, palier payant (`GEMINI_PAID_TIER=true`) exigé en production.
 - [x] **Phase 5 — Site vitrine** : accueil, formations (une page par programme), FAQ, galerie, témoignages (publication soumise au consentement), contact et WhatsApp sur toutes les pages, formulaire de contact → prospects (statut, notes, relances). Tout le contenu est administrable (`/admin/site`) : aucune coordonnée, chiffre ou témoignage n'est inventé
+- [x] **§14 — Gamification légère** : série de jours actifs, objectif hebdomadaire et badges de progression (première simulation, 80 % dans une section, 7 jours d'activité, 5 entretiens, documents complets), affichés sur le tableau de bord étudiant. Catalogue de badges administrable, dérivés de l'activité existante et persistés à leur premier déblocage. Pas de classement global public (préférence du CDC) — uniquement la progression personnelle
 
 ## Démarrage local
 
