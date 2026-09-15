@@ -204,15 +204,22 @@ export function LandingPage() {
             <h2 className="font-heading text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Les étapes sont nombreuses. La préparation peut être plus claire.</h2>
             <p className="text-xs text-slate-400">Découvrez les 4 défis majeurs transformés en étapes maîtrisées.</p>
           </div>
-          <div className="space-y-6">
+          {/* Pile de cartes : chaque carte est « sticky » et occupe ~46vh de défilement,
+              si bien que la suivante remonte du bas et recouvre la précédente (décalage de
+              deck via un top croissant) ; en remontant, l'empilement se défait à l'envers. */}
+          <div className="relative">
             {[
-              { top: 'top-24', border: 'border-white/[0.1]', bg: 'bg-[#0D131F]', shadow: 'shadow-[0_-10px_30px_rgba(0,0,0,0.6)]', n: '01', tag: 'Évaluation Initiale', title: 'Comprendre son niveau sans biais', text: 'Situez précisément vos acquis en logique, mathématiques et langue italienne avant même de sélectionner vos universités en Italie.', icon: 'solar:chart-square-bold' },
-              { top: 'top-28', border: 'border-white/[0.12]', bg: 'bg-[#0F1726]', shadow: 'shadow-[0_-15px_35px_rgba(0,0,0,0.7)]', n: '02', tag: 'Méthodologie Spécifique', title: 'Réussir les tests CISIA / TOLC', text: "Maîtrisez le format chronométré et le système de pénalités propre aux examens d'admission des universités italiennes.", icon: 'solar:target-bold' },
-              { top: 'top-32', border: 'border-white/[0.14]', bg: 'bg-[#111C30]', shadow: 'shadow-[0_-20px_40px_rgba(0,0,0,0.8)]', n: '03', tag: 'Communication & Conviction', title: 'Présenter son projet avec assurance', text: "Apprenez à expliciter la cohérence entre votre parcours au Congo et votre diplôme visé en Italie lors de l'entretien consulaire.", icon: 'solar:user-speak-bold' },
-              { top: 'top-36', border: 'border-white/[0.16]', bg: 'bg-[#132038]', shadow: 'shadow-[0_-25px_45px_rgba(0,0,0,0.85)]', n: '04', tag: 'Conformité Administrative', title: 'Organiser et sécuriser ses documents', text: 'Suivez rigoureusement les étapes de légalisation, Déclaration de Valeur (DoV) et pré-inscription Universitaly avec le centre de Brazzaville.', icon: 'solar:checklist-minimalistic-bold' },
-            ].map((step) => (
-              <div key={step.n} className={`sticky ${step.top} rounded-3xl border ${step.border} ${step.bg} p-8 ${step.shadow} transition-all duration-500 hover:border-[#0E8368] sm:p-10`}>
-                <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+              { border: 'border-white/[0.1]', bg: 'bg-[#0D131F]', shadow: 'shadow-[0_-10px_30px_rgba(0,0,0,0.6)]', n: '01', tag: 'Évaluation Initiale', title: 'Comprendre son niveau sans biais', text: 'Situez précisément vos acquis en logique, mathématiques et langue italienne avant même de sélectionner vos universités en Italie.', icon: 'solar:chart-square-bold' },
+              { border: 'border-white/[0.12]', bg: 'bg-[#0F1726]', shadow: 'shadow-[0_-15px_35px_rgba(0,0,0,0.7)]', n: '02', tag: 'Méthodologie Spécifique', title: 'Réussir les tests CISIA / TOLC', text: "Maîtrisez le format chronométré et le système de pénalités propre aux examens d'admission des universités italiennes.", icon: 'solar:target-bold' },
+              { border: 'border-white/[0.14]', bg: 'bg-[#111C30]', shadow: 'shadow-[0_-20px_40px_rgba(0,0,0,0.8)]', n: '03', tag: 'Communication & Conviction', title: 'Présenter son projet avec assurance', text: "Apprenez à expliciter la cohérence entre votre parcours au Congo et votre diplôme visé en Italie lors de l'entretien consulaire.", icon: 'solar:user-speak-bold' },
+              { border: 'border-white/[0.16]', bg: 'bg-[#132038]', shadow: 'shadow-[0_-25px_45px_rgba(0,0,0,0.85)]', n: '04', tag: 'Conformité Administrative', title: 'Organiser et sécuriser ses documents', text: 'Suivez rigoureusement les étapes de légalisation, Déclaration de Valeur (DoV) et pré-inscription Universitaly avec le centre de Brazzaville.', icon: 'solar:checklist-minimalistic-bold' },
+            ].map((step, i) => (
+              <div
+                key={step.n}
+                style={{ top: `${5 + i}rem` }}
+                className={`sticky flex min-h-[46vh] items-center rounded-3xl border ${step.border} ${step.bg} p-8 ${step.shadow} transition-colors duration-500 hover:border-[#0E8368] sm:p-10`}
+              >
+                <div className="flex w-full flex-col justify-between gap-6 md:flex-row md:items-center">
                   <div className="max-w-xl space-y-3">
                     <div className="flex items-center gap-3">
                       <span className="font-heading text-2xl font-black text-[#2DD4BF]">{step.n}</span>
