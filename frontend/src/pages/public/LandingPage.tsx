@@ -78,7 +78,6 @@ export function LandingPage() {
               <span>Agent IA</span>
               <span className="size-1.5 animate-pulse rounded-full bg-[#0E8368]" />
             </a>
-            <a href="#dashboard" className="rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-white/[0.05] hover:text-white">Cockpit</a>
             <a href="#stack-steps" className="rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-white/[0.05] hover:text-white">Étapes</a>
             <a href="#brazzaville" className="rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-white/[0.05] hover:text-white">Centre</a>
             <a href="#faq" className="rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-white/[0.05] hover:text-white">FAQ</a>
@@ -97,13 +96,6 @@ export function LandingPage() {
         <section id="hero" className="pt-14 sm:pt-20 lg:pt-28">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl space-y-6">
-              <div className="inline-flex items-center gap-2.5 rounded-full border border-[#0E8368]/30 bg-[#0E8368]/10 px-4 py-1.5 text-xs font-semibold text-[#2DD4BF] shadow-[0_0_15px_rgba(14,131,104,0.15)]">
-                <span className="flex items-center gap-1">
-                  <Icon name="twemoji:flag-congo-brazzaville" size={14} />
-                  <Icon name="twemoji:flag-italy" size={14} />
-                </span>
-                <span>Brazzaville &amp; Universités d&rsquo;Italie · Session 2025</span>
-              </div>
               <h1 className="font-heading text-4xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl">
                 Votre projet d&rsquo;études en Italie commence ici<span className="text-[#0E8368]">.</span>
               </h1>
@@ -350,69 +342,6 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Cockpit étudiant */}
-        <section id="dashboard" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="reveal grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
-            <div className="space-y-6 lg:col-span-5">
-              <span className="text-xs font-bold uppercase tracking-widest text-[#2DD4BF]">Cockpit Étudiant</span>
-              <h2 className="font-heading text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl">Comprendre ses résultats pour savoir quoi travailler ensuite.</h2>
-              <p className="text-sm leading-relaxed text-slate-300 sm:text-base">Centralisez chaque note de simulation, vos cours d&rsquo;italien et vos pièces administratives au même endroit.</p>
-              <div className="space-y-3 text-xs text-slate-300">
-                <div className="flex items-center gap-3"><span className="size-1.5 rounded-full bg-[#2DD4BF]" /><span>Recommandations dynamiques des modules à réviser</span></div>
-                <div className="flex items-center gap-3"><span className="size-1.5 rounded-full bg-[#2DD4BF]" /><span>Suivi clair de la complétude du dossier</span></div>
-              </div>
-            </div>
-            <div className="space-y-6 rounded-3xl border border-white/[0.08] bg-[#0D131F] p-6 shadow-xl sm:p-8 lg:col-span-7">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.06] pb-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-heading text-lg font-bold text-white">Bonjour, Grâce 👋</p>
-                    <Icon name="twemoji:flag-congo-brazzaville" size={16} />
-                  </div>
-                  <p className="text-xs text-slate-400">Session en cours · Université de Bologne <Icon name="twemoji:flag-italy" size={12} className="inline" /></p>
-                </div>
-                <div className="text-right">
-                  <span className="block text-xs font-medium text-slate-400">Progression générale</span>
-                  <span className="font-heading text-xl font-extrabold text-[#2DD4BF]">68 %</span>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Compétences évaluées</p>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {[
-                    { label: 'Logique & Raisonnement', val: '74 %', valCls: 'text-white', bar: 'bg-gradient-to-r from-[#0E8368] to-[#2DD4BF]', w: '74%' },
-                    { label: 'Italien académique', val: '70 %', valCls: 'text-[#2DD4BF]', bar: 'bg-[#2DD4BF]', w: '70%' },
-                    { label: 'Compréhension verbale', val: '62 %', valCls: 'text-white', bar: 'bg-[#0E8368]', w: '62%' },
-                    { label: 'Mathématiques appliquées', val: '55 %', valCls: 'text-[#E2583E]', bar: 'bg-[#E2583E]', w: '55%' },
-                  ].map((skill) => (
-                    <div key={skill.label} className="space-y-1.5 rounded-2xl border border-white/[0.05] bg-white/[0.02] p-3.5">
-                      <div className="flex justify-between text-xs font-medium">
-                        <span className="text-slate-300">{skill.label}</span>
-                        <span className={`font-bold ${skill.valCls}`}>{skill.val}</span>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
-                        <div className={`h-full rounded-full ${skill.bar}`} style={{ width: skill.w }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-4 pt-1 sm:grid-cols-2">
-                <div className="space-y-1 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Documents à compléter</span>
-                  <p className="text-xs font-bold text-white">3 sur 5 pièces validées</p>
-                  <p className="text-[11px] text-slate-400">Relevés du Bac enregistrés · Déclaration DoV en cours</p>
-                </div>
-                <div className="space-y-1 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Prochaine simulation</span>
-                  <p className="text-xs font-bold text-white">Jeudi à 16:00</p>
-                  <p className="text-[11px] text-slate-400">Entretien Consulaire IA · Session #3</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Feuille de route */}
         <section id="stack-steps" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="reveal mx-auto mb-12 max-w-2xl space-y-3 text-center">
@@ -534,35 +463,6 @@ export function LandingPage() {
                 ))}
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* Témoignages */}
-        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="reveal mx-auto mb-12 max-w-2xl space-y-3 text-center">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#2DD4BF]">Témoignages</span>
-            <h2 className="font-heading text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Retours d&rsquo;expérience</h2>
-          </div>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {[
-              { quote: "« Les simulations de l'agent IA m’ont appris à exprimer mon projet sans réciter. J'ai gagné en assurance lors de l'entretien. »", img: 'https://randomuser.me/api/portraits/men/32.jpg', name: 'Rodrigue M.', ctx: 'Politecnico di Torino · Ingénierie' },
-              { quote: '« Le suivi méthodique m’a permis de travailler exactement les chapitres où je perdais des points au TOLC-E. »', img: 'https://randomuser.me/api/portraits/women/44.jpg', name: 'Sarah N.', ctx: 'Université de Bologne · Économie' },
-              { quote: '« Mes parents ont apprécié la clarté du centre de Brazzaville sur les démarches et la légalisation des relevés. »', img: 'https://randomuser.me/api/portraits/men/86.jpg', name: 'Kevin K.', ctx: 'Université de Florence · Architecture' },
-            ].map((t, i) => (
-              <div key={t.name} style={{ transitionDelay: `${i * 90}ms` }} className="reveal flex flex-col justify-between space-y-4 rounded-3xl border border-white/[0.08] bg-[#0D131F] p-6 shadow-sm">
-                <p className="text-xs italic leading-relaxed text-slate-300 sm:text-sm">{t.quote}</p>
-                <div className="flex items-center gap-3 border-t border-white/[0.06] pt-3">
-                  <img src={t.img} alt={t.name} loading="lazy" className="size-9 rounded-full border border-white/10 object-cover" />
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-xs font-bold text-white">{t.name}</p>
-                      <Icon name="twemoji:flag-congo-brazzaville" size={12} />
-                    </div>
-                    <p className="text-[10px] text-slate-400">{t.ctx}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         </section>
 
