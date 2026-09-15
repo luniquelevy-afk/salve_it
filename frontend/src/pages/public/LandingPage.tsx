@@ -4,6 +4,10 @@ import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { Icon } from './landing-icon';
 import heroStudent from '../../assets/landing/images/zwLWRolYpET.jpeg';
 import centreBrazza from '../../assets/landing/images/q8S28WUPWgJ.jpeg';
+import cardEval from '../../assets/landing/cards/c1-evaluation.jpg';
+import cardTests from '../../assets/landing/cards/c2-tests.jpg';
+import cardEntretien from '../../assets/landing/cards/c3-entretien.jpg';
+import cardDocs from '../../assets/landing/cards/c4-documents.jpg';
 
 // Landing page « cockpit » (design fourni, reproduit fidèlement). Page autonome :
 // elle porte son propre bandeau, en-tête, pied de page et bouton WhatsApp, hors du
@@ -209,17 +213,19 @@ export function LandingPage() {
               deck via un top croissant) ; en remontant, l'empilement se défait à l'envers. */}
           <div className="relative">
             {[
-              { border: 'border-white/[0.1]', bg: 'bg-[#0D131F]', shadow: 'shadow-[0_-10px_30px_rgba(0,0,0,0.6)]', n: '01', tag: 'Évaluation Initiale', title: 'Comprendre son niveau sans biais', text: 'Situez précisément vos acquis en logique, mathématiques et langue italienne avant même de sélectionner vos universités en Italie.', icon: 'solar:chart-square-bold' },
-              { border: 'border-white/[0.12]', bg: 'bg-[#0F1726]', shadow: 'shadow-[0_-15px_35px_rgba(0,0,0,0.7)]', n: '02', tag: 'Méthodologie Spécifique', title: 'Réussir les tests CISIA / TOLC', text: "Maîtrisez le format chronométré et le système de pénalités propre aux examens d'admission des universités italiennes.", icon: 'solar:target-bold' },
-              { border: 'border-white/[0.14]', bg: 'bg-[#111C30]', shadow: 'shadow-[0_-20px_40px_rgba(0,0,0,0.8)]', n: '03', tag: 'Communication & Conviction', title: 'Présenter son projet avec assurance', text: "Apprenez à expliciter la cohérence entre votre parcours au Congo et votre diplôme visé en Italie lors de l'entretien consulaire.", icon: 'solar:user-speak-bold' },
-              { border: 'border-white/[0.16]', bg: 'bg-[#132038]', shadow: 'shadow-[0_-25px_45px_rgba(0,0,0,0.85)]', n: '04', tag: 'Conformité Administrative', title: 'Organiser et sécuriser ses documents', text: 'Suivez rigoureusement les étapes de légalisation, Déclaration de Valeur (DoV) et pré-inscription Universitaly avec le centre de Brazzaville.', icon: 'solar:checklist-minimalistic-bold' },
+              { border: 'border-white/[0.1]', bg: 'bg-[#0D131F]', shadow: 'shadow-[0_-10px_30px_rgba(0,0,0,0.6)]', n: '01', tag: 'Évaluation Initiale', title: 'Comprendre son niveau sans biais', text: 'Situez précisément vos acquis en logique, mathématiques et langue italienne avant même de sélectionner vos universités en Italie.', icon: 'solar:chart-square-bold', img: cardEval },
+              { border: 'border-white/[0.12]', bg: 'bg-[#0F1726]', shadow: 'shadow-[0_-15px_35px_rgba(0,0,0,0.7)]', n: '02', tag: 'Méthodologie Spécifique', title: 'Réussir les tests CISIA / TOLC', text: "Maîtrisez le format chronométré et le système de pénalités propre aux examens d'admission des universités italiennes.", icon: 'solar:target-bold', img: cardTests },
+              { border: 'border-white/[0.14]', bg: 'bg-[#111C30]', shadow: 'shadow-[0_-20px_40px_rgba(0,0,0,0.8)]', n: '03', tag: 'Communication & Conviction', title: 'Présenter son projet avec assurance', text: "Apprenez à expliciter la cohérence entre votre parcours au Congo et votre diplôme visé en Italie lors de l'entretien consulaire.", icon: 'solar:user-speak-bold', img: cardEntretien },
+              { border: 'border-white/[0.16]', bg: 'bg-[#132038]', shadow: 'shadow-[0_-25px_45px_rgba(0,0,0,0.85)]', n: '04', tag: 'Conformité Administrative', title: 'Organiser et sécuriser ses documents', text: 'Suivez rigoureusement les étapes de légalisation, Déclaration de Valeur (DoV) et pré-inscription Universitaly avec le centre de Brazzaville.', icon: 'solar:checklist-minimalistic-bold', img: cardDocs },
             ].map((step, i) => (
               <div
                 key={step.n}
                 style={{ top: `${5 + i}rem` }}
-                className={`sticky flex min-h-[46vh] items-center rounded-3xl border ${step.border} ${step.bg} p-8 ${step.shadow} transition-colors duration-500 hover:border-[#0E8368] sm:p-10`}
+                className={`sticky flex min-h-[46vh] items-center overflow-hidden rounded-3xl border ${step.border} ${step.bg} p-8 ${step.shadow} transition-colors duration-500 hover:border-[#0E8368] sm:p-10`}
               >
-                <div className="flex w-full flex-col justify-between gap-6 md:flex-row md:items-center">
+                <img src={step.img} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40" />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#070A0F]/95 via-[#070A0F]/80 to-[#070A0F]/45" />
+                <div className="relative z-10 flex w-full flex-col justify-between gap-6 md:flex-row md:items-center">
                   <div className="max-w-xl space-y-3">
                     <div className="flex items-center gap-3">
                       <span className="font-heading text-2xl font-black text-[#2DD4BF]">{step.n}</span>
