@@ -119,82 +119,32 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* Composition cockpit */}
-            <div className="reveal mt-14 grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
-              <div className="space-y-6 rounded-3xl border border-white/[0.08] bg-gradient-to-b from-[#0D131F] to-[#070A0F] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-500 hover:border-white/[0.18] sm:p-8 lg:col-span-7">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-tr from-[#0E8368] to-[#2DD4BF] text-xs font-bold text-white shadow-sm">GM</div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <p className="font-heading text-sm font-bold text-white">Grâce Moukoko</p>
-                        <Icon name="twemoji:flag-congo-brazzaville" size={14} />
-                      </div>
-                      <p className="text-[11px] text-slate-400">
-                        Université de Bologne <Icon name="twemoji:flag-italy" size={12} className="inline" /> · Licence Économie
-                      </p>
-                    </div>
+            {/* Composition : photo + agent IA */}
+            <div className="reveal mt-14 grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
+              <div className="group relative min-h-72 overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0D131F]">
+                <img src={heroStudent} alt="Étudiante congolaise préparant ses études en Italie" className="h-full w-full object-cover grayscale-[20%] transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#070A0F] via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/70 px-3.5 py-1.5 text-[11px] font-medium text-white backdrop-blur-md">
+                    <Icon name="twemoji:flag-congo-brazzaville" size={14} />
+                    <span>Étudiante accompagnée à Brazzaville</span>
                   </div>
-                  <span className="rounded-full border border-[#0E8368]/30 bg-[#0E8368]/15 px-3 py-1 text-[11px] font-semibold text-[#2DD4BF]">Progression : 68%</span>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1 rounded-2xl border border-white/[0.05] bg-white/[0.02] p-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Score TOLC-E</span>
-                    <p className="font-heading text-2xl font-extrabold text-white">78<span className="ml-1 text-xs font-semibold text-[#2DD4BF]">+14%</span></p>
-                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
-                      <div className="h-full rounded-full bg-gradient-to-r from-[#0E8368] to-[#2DD4BF]" style={{ width: '78%' }} />
-                    </div>
-                  </div>
-                  <div className="space-y-1 rounded-2xl border border-white/[0.05] bg-white/[0.02] p-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Italien</span>
-                    <p className="font-heading text-2xl font-extrabold text-[#2DD4BF]">B1<span className="ml-1 text-xs font-normal text-slate-500">/ B2</span></p>
-                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
-                      <div className="h-full rounded-full bg-[#2DD4BF]" style={{ width: '65%' }} />
-                    </div>
-                  </div>
-                  <div className="space-y-1 rounded-2xl border border-white/[0.05] bg-white/[0.02] p-4">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Prep Visa</span>
-                    <p className="font-heading text-2xl font-extrabold text-[#E2583E]">64%</p>
-                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
-                      <div className="h-full rounded-full bg-[#E2583E]" style={{ width: '64%' }} />
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between gap-4 rounded-2xl border border-[#0E8368]/20 bg-[#0E8368]/5 p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#0E8368] text-white">
-                      <Icon name="solar:play-bold" size={16} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-white">Simulation recommandée</p>
-                      <p className="text-[11px] text-slate-300">Logique mathématique &amp; Compréhension verbale CISIA</p>
-                    </div>
-                  </div>
-                  <a href="#test-gratuit" className="text-xs font-semibold text-[#2DD4BF] transition-colors hover:text-white">Démarrer →</a>
                 </div>
               </div>
-              <div className="flex flex-col justify-between gap-4 lg:col-span-5">
-                <div className="group relative h-60 overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0D131F] sm:h-64">
-                  <img src={heroStudent} alt="Étudiante congolaise préparant ses études en Italie" className="h-full w-full object-cover grayscale-[20%] transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#070A0F] via-transparent to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/70 px-3.5 py-1.5 text-[11px] font-medium text-white backdrop-blur-md">
-                      <Icon name="twemoji:flag-congo-brazzaville" size={14} />
-                      <span>Étudiante accompagnée à Brazzaville</span>
-                    </div>
-                  </div>
+              <div className="flex flex-col justify-center gap-4 rounded-3xl border border-white/[0.08] bg-[#0D131F]/90 p-6 backdrop-blur-md sm:p-8">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-2 font-bold text-white">
+                    <Icon name="solar:magic-stick-3-bold" size={16} className="text-[#2DD4BF]" />Agent Ambassade IA
+                  </span>
+                  <span className="rounded-full border border-[#0E8368]/30 bg-[#0E8368]/15 px-2 py-0.5 text-[10px] font-bold text-[#2DD4BF]">Simulation Vocale</span>
                 </div>
-                <div className="space-y-3 rounded-3xl border border-white/[0.08] bg-[#0D131F]/90 p-5 backdrop-blur-md">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 font-bold text-white">
-                      <Icon name="solar:magic-stick-3-bold" size={16} className="text-[#2DD4BF]" />Agent Ambassade IA
-                    </span>
-                    <span className="rounded-full border border-[#0E8368]/30 bg-[#0E8368]/15 px-2 py-0.5 text-[10px] font-bold text-[#2DD4BF]">Simulation Vocale</span>
-                  </div>
-                  <p className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-3 text-xs italic leading-relaxed text-slate-300">
-                    « Qual è la tua motivazione principale per studiare in Italia ? »
-                  </p>
-                </div>
+                <p className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-4 text-sm italic leading-relaxed text-slate-300">
+                  « Qual è la tua motivazione principale per studiare in Italia ? »
+                </p>
+                <a href="#test-gratuit" className="inline-flex w-fit items-center gap-2 text-xs font-semibold text-[#2DD4BF] transition-colors hover:text-white">
+                  <Icon name="solar:play-bold" size={14} />
+                  <span>Démarrer une simulation</span>
+                </a>
               </div>
             </div>
           </div>
