@@ -1,5 +1,5 @@
-import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { Icon } from './landing-icon';
 import heroStudent from '../../assets/landing/images/zwLWRolYpET.jpeg';
@@ -18,6 +18,29 @@ export function LandingPage() {
     navigate('/test-de-niveau');
   };
 
+  // Motion : révèle les blocs marqués « reveal » quand ils entrent dans le viewport.
+  useEffect(() => {
+    const els = Array.from(document.querySelectorAll<HTMLElement>('.landing .reveal'));
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced || !('IntersectionObserver' in window)) {
+      els.forEach((el) => el.classList.add('is-visible'));
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        }
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -8% 0px' },
+    );
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="landing relative min-h-screen overflow-x-hidden bg-[#070A0F] font-sans text-[#F1F5F9] antialiased selection:bg-[#0E8368]/30 selection:text-white">
       {/* Décor : halos et grille en fond */}
@@ -33,10 +56,8 @@ export function LandingPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-slate-300">
-              <Icon name="twemoji:flag-congo-brazzaville" size={16} />
               <span className="text-[10px] font-bold text-slate-300">Congo</span>
               <Icon name="solar:arrow-right-linear" size={12} className="text-[#2DD4BF]" />
-              <Icon name="twemoji:flag-italy" size={16} />
               <span className="text-[10px] font-bold text-slate-300">Italie</span>
             </div>
             <span className="hidden text-slate-500 sm:inline">|</span>
@@ -64,23 +85,12 @@ export function LandingPage() {
       <header className="sticky top-4 z-50 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between rounded-full border border-white/[0.08] bg-[#0D131F]/85 px-5 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all duration-500 hover:border-white/[0.18]">
           <a href="#hero" className="group flex items-center gap-3">
-            <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#0E8368] to-[#2DD4BF] font-heading text-xs font-extrabold text-white shadow-sm transition-transform duration-500 group-hover:rotate-6">
+            <div className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#0E8368] to-[#2DD4BF] font-heading text-base font-extrabold text-white shadow-[0_4px_16px_rgba(14,131,104,0.35)] transition-transform duration-500 group-hover:rotate-6">
               SI
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-heading text-sm font-extrabold tracking-tight text-white transition-colors group-hover:text-[#2DD4BF] sm:text-base">
-                  Salve Italia
-                </span>
-                <div className="flex items-center gap-0.5">
-                  <Icon name="twemoji:flag-congo-brazzaville" size={12} />
-                  <Icon name="twemoji:flag-italy" size={12} />
-                </div>
-              </div>
-              <span className="hidden text-[8px] font-bold uppercase tracking-widest text-slate-400 sm:block">
-                Brazzaville · Rome · Bologne · Turin
-              </span>
-            </div>
+            <span className="font-heading text-lg font-extrabold tracking-tight text-white transition-colors group-hover:text-[#2DD4BF] sm:text-xl">
+              Salve Italia
+            </span>
           </a>
           <nav className="hidden items-center gap-1 text-[13px] font-medium text-slate-300 md:flex">
             <a href="#vision" className="rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-white/[0.05] hover:text-white">Vision</a>
@@ -95,10 +105,10 @@ export function LandingPage() {
             <a href="#faq" className="rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-white/[0.05] hover:text-white">FAQ</a>
           </nav>
           <div className="flex items-center gap-3">
-            <a href="#test-gratuit" className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-white px-4 py-2 text-xs font-bold text-[#070A0F] transition-all duration-500 hover:bg-[#0E8368] hover:text-white hover:shadow-[0_0_25px_rgba(14,131,104,0.4)] sm:px-5">
-              <span>Évaluer mon niveau</span>
+            <Link to="/contact" className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-white px-4 py-2 text-xs font-bold text-[#070A0F] transition-all duration-500 hover:bg-[#0E8368] hover:text-white hover:shadow-[0_0_25px_rgba(14,131,104,0.4)] sm:px-5">
+              <span>Contactez-nous</span>
               <Icon name="solar:arrow-right-linear" size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
-            </a>
+            </Link>
           </div>
         </div>
       </header>
@@ -140,7 +150,7 @@ export function LandingPage() {
             </div>
 
             {/* Composition cockpit */}
-            <div className="mt-14 grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
+            <div className="reveal mt-14 grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
               <div className="space-y-6 rounded-3xl border border-white/[0.08] bg-gradient-to-b from-[#0D131F] to-[#070A0F] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-500 hover:border-white/[0.18] sm:p-8 lg:col-span-7">
                 <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
                   <div className="flex items-center gap-3">
@@ -242,7 +252,7 @@ export function LandingPage() {
 
         {/* Vision */}
         <section id="vision" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 items-start gap-10 border-l border-[#0E8368]/40 pl-6 sm:pl-12 lg:grid-cols-12">
+          <div className="reveal grid grid-cols-1 items-start gap-10 border-l border-[#0E8368]/40 pl-6 sm:pl-12 lg:grid-cols-12">
             <div className="space-y-6 lg:col-span-8">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#2DD4BF]">
                 <Icon name="twemoji:flag-congo-brazzaville" size={14} />
@@ -269,7 +279,7 @@ export function LandingPage() {
 
         {/* Diagnostic — 4 défis (cartes empilées) */}
         <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-10 max-w-2xl space-y-3">
+          <div className="reveal mb-10 max-w-2xl space-y-3">
             <span className="text-xs font-bold uppercase tracking-widest text-[#E2583E]">Diagnostic</span>
             <h2 className="font-heading text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Les étapes sont nombreuses. La préparation peut être plus claire.</h2>
             <p className="text-xs text-slate-400">Découvrez les 4 défis majeurs transformés en étapes maîtrisées.</p>
@@ -302,7 +312,7 @@ export function LandingPage() {
 
         {/* Solutions */}
         <section id="solutions" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-12 flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <div className="reveal mb-12 flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <div className="space-y-3">
               <span className="text-xs font-bold uppercase tracking-widest text-[#2DD4BF]">L&rsquo;Écosystème Salve Italia</span>
               <h2 className="font-heading text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Un accompagnement numérique pour chaque étape</h2>
@@ -315,8 +325,8 @@ export function LandingPage() {
               { span: 'md:col-span-5', grad: 'bg-gradient-to-br from-[#0D131F] to-[#070A0F]', tag: 'Vocal & Écrit', tagCls: 'bg-[#0E8368]/20 border-[#0E8368]/40', icon: 'solar:magic-stick-3-bold', title: 'Entretien IA', text: 'Entraînez-vous à répondre à des questions réalistes avec retour pédagogique instantané sur la cohérence de vos propos.', foot: 'Entraînement illimité 24/7', wide: false },
               { span: 'md:col-span-5', grad: 'bg-[#0D131F]', tag: 'Niveaux A1 → B2', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:book-bookmark-bold', title: 'Italien académique', text: 'Développez votre compréhension, enrichissez votre vocabulaire universitaire et préparez les certifications CILS / CELI.', foot: 'Exercices interactifs & phonétique', wide: false },
               { span: 'md:col-span-7', grad: 'bg-[#0D131F]', tag: 'Checklist & Échéances', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:checklist-minimalistic-bold', title: 'Suivi du projet', text: 'Visualisez vos progrès, archivez vos documents préparés et suivez les échéances en direct avec vos parents et nos conseillers.', foot: 'Visibilité partagée avec le centre de Brazzaville', wide: true },
-            ].map((mod) => (
-              <div key={mod.title} className={`group flex flex-col justify-between space-y-8 rounded-3xl border border-white/[0.08] ${mod.grad} p-8 transition-all duration-500 hover:-translate-y-2 hover:border-[#0E8368] hover:shadow-[0_20px_40px_rgba(14,131,104,0.2)] sm:p-10 ${mod.span}`}>
+            ].map((mod, i) => (
+              <div key={mod.title} style={{ transitionDelay: `${i * 90}ms` }} className={`reveal group flex flex-col justify-between space-y-8 rounded-3xl border border-white/[0.08] ${mod.grad} p-8 transition-all duration-500 hover:-translate-y-2 hover:border-[#0E8368] hover:shadow-[0_20px_40px_rgba(14,131,104,0.2)] sm:p-10 ${mod.span}`}>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className={`rounded-full border px-3.5 py-1 text-[11px] font-bold text-[#2DD4BF] ${mod.tagCls}`}>{mod.tag}</span>
@@ -337,7 +347,7 @@ export function LandingPage() {
         {/* Agent IA */}
         <section id="ai-agent" className="relative mx-auto max-w-7xl overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-b from-[#0D131F] via-[#070A0F] to-[#070A0F] px-6 py-16 sm:rounded-[2.5rem] sm:px-12 sm:py-24">
           <div className="pointer-events-none absolute top-1/2 right-0 size-96 -translate-y-1/2 rounded-full bg-[#0E8368]/15 blur-3xl" />
-          <div className="relative z-10 grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
+          <div className="reveal relative z-10 grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
             <div className="space-y-6 lg:col-span-5">
               <div className="inline-flex items-center gap-2 rounded-full border border-[#0E8368]/30 bg-[#0E8368]/10 px-3.5 py-1 text-xs font-semibold text-[#2DD4BF]">
                 <span className="size-2 animate-ping rounded-full bg-[#2DD4BF]" />
@@ -402,7 +412,7 @@ export function LandingPage() {
 
         {/* Cockpit étudiant */}
         <section id="dashboard" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
+          <div className="reveal grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
             <div className="space-y-6 lg:col-span-5">
               <span className="text-xs font-bold uppercase tracking-widest text-[#2DD4BF]">Cockpit Étudiant</span>
               <h2 className="font-heading text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl">Comprendre ses résultats pour savoir quoi travailler ensuite.</h2>
@@ -465,7 +475,7 @@ export function LandingPage() {
 
         {/* Feuille de route */}
         <section id="stack-steps" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto mb-12 max-w-2xl space-y-3 text-center">
+          <div className="reveal mx-auto mb-12 max-w-2xl space-y-3 text-center">
             <span className="text-xs font-bold uppercase tracking-widest text-[#2DD4BF]">Feuille de Route</span>
             <h2 className="font-heading text-3xl font-extrabold tracking-tight text-white sm:text-4xl">De votre première évaluation à votre projet préparé</h2>
             <p className="text-xs text-slate-400">Un parcours progressif pensé pour les étudiants du Congo vers l&rsquo;Italie.</p>
@@ -490,7 +500,7 @@ export function LandingPage() {
 
         {/* Test gratuit (formulaire) */}
         <section id="test-gratuit" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-white/[0.08] bg-gradient-to-b from-[#0D131F] to-[#070A0F] p-8 shadow-2xl sm:rounded-[2.5rem] sm:p-12 lg:p-16">
+          <div className="reveal rounded-3xl border border-white/[0.08] bg-gradient-to-b from-[#0D131F] to-[#070A0F] p-8 shadow-2xl sm:rounded-[2.5rem] sm:p-12 lg:p-16">
             <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12">
               <div className="space-y-4 lg:col-span-5">
                 <span className="inline-block rounded-full border border-[#0E8368]/30 bg-[#0E8368]/20 px-3.5 py-1 text-xs font-bold text-[#2DD4BF]">Accès Immédiat · 100% Gratuit</span>
@@ -544,7 +554,7 @@ export function LandingPage() {
 
         {/* Brazzaville */}
         <section id="brazzaville" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
+          <div className="reveal grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
             <div className="lg:col-span-6">
               <div className="group relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0D131F] shadow-lg">
                 <img src={centreBrazza} alt="Enseignants et étudiants du centre à Brazzaville" className="h-80 w-full object-cover grayscale-[15%] transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0 sm:h-96" />
@@ -585,7 +595,7 @@ export function LandingPage() {
 
         {/* Témoignages */}
         <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto mb-12 max-w-2xl space-y-3 text-center">
+          <div className="reveal mx-auto mb-12 max-w-2xl space-y-3 text-center">
             <span className="text-xs font-bold uppercase tracking-widest text-[#2DD4BF]">Témoignages</span>
             <h2 className="font-heading text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Retours d&rsquo;expérience</h2>
           </div>
@@ -594,8 +604,8 @@ export function LandingPage() {
               { quote: "« Les simulations de l'agent IA m’ont appris à exprimer mon projet sans réciter. J'ai gagné en assurance lors de l'entretien. »", img: 'https://randomuser.me/api/portraits/men/32.jpg', name: 'Rodrigue M.', ctx: 'Politecnico di Torino · Ingénierie' },
               { quote: '« Le suivi méthodique m’a permis de travailler exactement les chapitres où je perdais des points au TOLC-E. »', img: 'https://randomuser.me/api/portraits/women/44.jpg', name: 'Sarah N.', ctx: 'Université de Bologne · Économie' },
               { quote: '« Mes parents ont apprécié la clarté du centre de Brazzaville sur les démarches et la légalisation des relevés. »', img: 'https://randomuser.me/api/portraits/men/86.jpg', name: 'Kevin K.', ctx: 'Université de Florence · Architecture' },
-            ].map((t) => (
-              <div key={t.name} className="flex flex-col justify-between space-y-4 rounded-3xl border border-white/[0.08] bg-[#0D131F] p-6 shadow-sm">
+            ].map((t, i) => (
+              <div key={t.name} style={{ transitionDelay: `${i * 90}ms` }} className="reveal flex flex-col justify-between space-y-4 rounded-3xl border border-white/[0.08] bg-[#0D131F] p-6 shadow-sm">
                 <p className="text-xs italic leading-relaxed text-slate-300 sm:text-sm">{t.quote}</p>
                 <div className="flex items-center gap-3 border-t border-white/[0.06] pt-3">
                   <img src={t.img} alt={t.name} loading="lazy" className="size-9 rounded-full border border-white/10 object-cover" />
@@ -614,11 +624,11 @@ export function LandingPage() {
 
         {/* FAQ */}
         <section id="faq" className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-12 space-y-3 text-center">
+          <div className="reveal mb-12 space-y-3 text-center">
             <span className="text-xs font-bold uppercase tracking-widest text-[#2DD4BF]">Questions Fréquentes</span>
             <h2 className="font-heading text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Foire aux questions</h2>
           </div>
-          <div className="divide-y divide-white/[0.08] border-y border-white/[0.08]">
+          <div className="reveal divide-y divide-white/[0.08] border-y border-white/[0.08]">
             {[
               { q: 'Qu’est-ce que Salve Italia ?', a: 'Salve Italia est une plateforme de préparation académique, linguistique et consulaire pour les candidats congolais souhaitant intégrer une université en Italie.' },
               { q: 'À qui s’adresse la plateforme ?', a: "Aux bacheliers, étudiants et professionnels préparant un départ vers une licence, un master ou souhaitant apprendre l'italien dès maintenant." },
@@ -639,7 +649,7 @@ export function LandingPage() {
 
         {/* CTA final */}
         <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-br from-[#0D131F] via-[#070A0F] to-[#070A0F] px-8 py-16 text-center text-white sm:rounded-[2.5rem] sm:px-16 sm:py-24">
+          <div className="reveal relative overflow-hidden rounded-3xl border border-white/[0.08] bg-gradient-to-br from-[#0D131F] via-[#070A0F] to-[#070A0F] px-8 py-16 text-center text-white sm:rounded-[2.5rem] sm:px-16 sm:py-24">
             <div className="pointer-events-none absolute -bottom-24 -left-24 size-96 rounded-full bg-[#0E8368]/20 blur-3xl" />
             <div className="relative z-10 mx-auto max-w-2xl space-y-6">
               <div className="inline-flex items-center gap-2 rounded-full border border-[#0E8368]/30 bg-[#0E8368]/20 px-4 py-1 text-xs font-bold text-[#2DD4BF]">
