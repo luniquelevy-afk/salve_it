@@ -11,11 +11,11 @@ import { api, ApiError } from '../../lib/api';
 import type { Gamification, LearningPath, Readiness, StudentDashboardSummary } from '../../lib/types';
 
 const SHORTCUTS = [
-  { to: '/etudiant/cours', label: 'Cours' },
-  { to: '/etudiant/exercices', label: 'Exercices' },
-  { to: '/etudiant/simulations', label: 'Simulations' },
-  { to: '/etudiant/entretien', label: 'Entretien consulaire' },
-  { to: '/calendrier', label: 'Calendrier' },
+  { to: '/etudiant/cours', label: 'Cours', desc: 'Leçons et contenus' },
+  { to: '/etudiant/exercices', label: 'Exercices', desc: 'Correction immédiate' },
+  { to: '/etudiant/simulations', label: 'Simulations', desc: 'Tests type TOLC' },
+  { to: '/etudiant/entretien', label: 'Entretien', desc: 'Agent consulaire IA' },
+  { to: '/calendrier', label: 'Calendrier', desc: 'Séances à venir' },
 ];
 
 // §16.1 : indicateurs clés, prochaine action recommandée, compétences, préparation, échéances, annonces.
@@ -47,21 +47,28 @@ export function StudentDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Ciao {me?.fullName.split(' ')[0]} 👋</h1>
-          <p className="text-stone-600">
-            Votre espace de préparation{me?.level ? <> · niveau <span className="font-semibold">{me.level}</span></> : null}
-          </p>
-        </div>
-        <nav aria-label="Accès rapides" className="ml-auto flex flex-wrap gap-2">
-          {SHORTCUTS.map((shortcut) => (
-            <Link key={shortcut.to} to={shortcut.to} className="btn-secondary px-3 py-1.5 text-xs">
-              {shortcut.label}
-            </Link>
-          ))}
-        </nav>
+      <div>
+        <h1 className="text-2xl font-bold">Ciao {me?.fullName.split(' ')[0]} 👋</h1>
+        <p className="text-stone-600">
+          Votre espace de préparation{me?.level ? <> · niveau <span className="font-semibold">{me.level}</span></> : null}
+        </p>
       </div>
+
+      <nav aria-label="Accès rapides" className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {SHORTCUTS.map((shortcut) => (
+          <Link
+            key={shortcut.to}
+            to={shortcut.to}
+            className="card group flex flex-col gap-0.5 transition hover:-translate-y-0.5 hover:border-verde/40 hover:shadow-md"
+          >
+            <span className="flex items-center justify-between text-sm font-semibold text-notte">
+              {shortcut.label}
+              <span aria-hidden className="text-verde transition-transform group-hover:translate-x-0.5">→</span>
+            </span>
+            <span className="text-xs text-stone-500">{shortcut.desc}</span>
+          </Link>
+        ))}
+      </nav>
 
       <ErrorBanner message={error} />
       <ErrorBanner message={summaryError} />

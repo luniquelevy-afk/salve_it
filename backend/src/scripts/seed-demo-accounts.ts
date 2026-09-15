@@ -25,7 +25,9 @@ interface DemoAccount {
 }
 
 // Un compte par rôle. Même mot de passe pour simplifier la démo.
-const DEMO_PASSWORD = 'Demo1234!';
+// ≥ 10 caractères, lettres + chiffres (cf. supabase/config.toml : minimum_password_length,
+// password_requirements = letters_digits).
+const DEMO_PASSWORD = 'DemoSalve2026';
 const DEMO_ACCOUNTS: DemoAccount[] = [
   { email: 'admin.demo@salve.test', password: DEMO_PASSWORD, fullName: 'Admin Démo', role: 'admin' },
   { email: 'prof.demo@salve.test', password: DEMO_PASSWORD, fullName: 'Professeur Démo', role: 'teacher' },

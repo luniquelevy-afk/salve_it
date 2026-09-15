@@ -83,11 +83,8 @@ export function LandingPage() {
             <a href="#faq" className="rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-white/[0.05] hover:text-white">FAQ</a>
           </nav>
           <div className="flex shrink-0 items-center gap-3">
-            <Link to="/contact" className="group relative inline-flex items-center gap-1.5 overflow-hidden whitespace-nowrap rounded-full bg-white px-3.5 py-2 text-[11px] font-bold text-[#070A0F] transition-all duration-500 hover:bg-[#0E8368] hover:text-white hover:shadow-[0_0_25px_rgba(14,131,104,0.4)] sm:gap-2 sm:px-5 sm:text-xs">
+            <Link to="/contact" className="group relative inline-flex items-center overflow-hidden whitespace-nowrap rounded-full bg-white px-4 py-2 text-[11px] font-bold text-[#070A0F] transition-all duration-500 hover:bg-[#0E8368] hover:text-white hover:shadow-[0_0_25px_rgba(14,131,104,0.4)] sm:px-5 sm:text-xs">
               <span>Contactez-nous</span>
-              <span className="hidden sm:inline-flex">
-                <Icon name="solar:arrow-right-linear" size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
-              </span>
             </Link>
           </div>
         </div>
