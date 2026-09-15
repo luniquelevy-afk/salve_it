@@ -222,8 +222,8 @@ export function LandingPage() {
                 style={{ top: `${5 + i}rem` }}
                 className={`sticky flex min-h-[46vh] items-center overflow-hidden rounded-3xl border ${step.border} ${step.bg} p-8 ${step.shadow} transition-colors duration-500 hover:border-[#0E8368] sm:p-10`}
               >
-                <img src={step.img} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40" />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#070A0F]/95 via-[#070A0F]/80 to-[#070A0F]/45" />
+                <img src={step.img} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-50" />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#070A0F]/90 via-[#070A0F]/68 to-[#070A0F]/32" />
                 <div className="relative z-10 flex w-full flex-col justify-between gap-6 md:flex-row md:items-center">
                   <div className="max-w-xl space-y-3">
                     <div className="flex items-center gap-3">
@@ -259,8 +259,8 @@ export function LandingPage() {
               { span: 'md:col-span-7', grad: 'bg-[#0D131F]', img: imgPlanning, tag: 'Checklist & Échéances', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:checklist-minimalistic-bold', title: 'Suivi du projet', text: 'Visualisez vos progrès, archivez vos documents préparés et suivez les échéances en direct avec vos parents et nos conseillers.', foot: 'Visibilité partagée avec le centre de Brazzaville', wide: true },
             ].map((mod, i) => (
               <div key={mod.title} style={{ transitionDelay: `${i * 90}ms` }} className={`reveal group relative flex flex-col justify-between space-y-8 overflow-hidden rounded-3xl border border-white/[0.08] ${mod.grad} p-8 transition-all duration-500 hover:-translate-y-2 hover:border-[#0E8368] hover:shadow-[0_20px_40px_rgba(14,131,104,0.2)] sm:p-10 ${mod.span}`}>
-                <img src={mod.img} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35 transition-transform duration-700 group-hover:scale-105" />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#070A0F]/92 via-[#070A0F]/80 to-[#070A0F]/55" />
+                <img src={mod.img} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-45 transition-transform duration-700 group-hover:scale-105" />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#070A0F]/88 via-[#070A0F]/66 to-[#070A0F]/40" />
                 <div className="relative z-10 space-y-4">
                   <div className="flex items-center justify-between">
                     <span className={`rounded-full border px-3.5 py-1 text-[11px] font-bold text-[#2DD4BF] ${mod.tagCls}`}>{mod.tag}</span>
@@ -358,8 +358,8 @@ export function LandingPage() {
               { top: 'top-36', border: 'border-white/[0.18]', bg: 'bg-[#111C30]', shadow: 'shadow-[0_-20px_40px_rgba(0,0,0,0.85)]', badge: 'bg-[#E2583E] text-white', num: '3', tagCls: 'text-[#E2583E]', tag: 'Étape 3 · Finalisation', title: 'Préparez vos tests et votre entretien consulaire', text: "Multipliez les simulations chronométrées et les entretiens oraux avec l'Agent IA jusqu'à maîtriser parfaitement votre dossier.", img: cardEntretien },
             ].map((step) => (
               <div key={step.num} className={`sticky ${step.top} overflow-hidden rounded-3xl border ${step.border} ${step.bg} p-8 ${step.shadow} transition-colors duration-500 hover:border-[#0E8368] sm:p-10`}>
-                <img src={step.img} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35" />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#070A0F]/92 via-[#070A0F]/82 to-[#070A0F]/55" />
+                <img src={step.img} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-45" />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#070A0F]/88 via-[#070A0F]/68 to-[#070A0F]/42" />
                 <div className="relative z-10 space-y-4">
                   <div className="flex items-center justify-between">
                     <div className={`flex size-12 items-center justify-center rounded-2xl font-heading text-base font-extrabold shadow-md ${step.badge}`}>{step.num}</div>
