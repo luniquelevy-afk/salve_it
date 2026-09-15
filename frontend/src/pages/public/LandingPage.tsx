@@ -51,36 +51,6 @@ export function LandingPage() {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
       </div>
 
-      {/* Bandeau d'annonce */}
-      <div className="relative z-50 border-b border-white/[0.06] bg-[#070A0F]/80 px-4 py-2.5 text-[11px] font-medium text-slate-400 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-slate-300">
-              <span className="text-[10px] font-bold text-slate-300">Congo</span>
-              <Icon name="solar:arrow-right-linear" size={12} className="text-[#2DD4BF]" />
-              <span className="text-[10px] font-bold text-slate-300">Italie</span>
-            </div>
-            <span className="hidden text-slate-500 sm:inline">|</span>
-            <span className="hidden text-[10px] font-semibold uppercase tracking-widest text-[#2DD4BF] sm:inline">
-              Passerelle académique officielle 2025/2026
-            </span>
-          </div>
-          <div className="hidden items-center gap-6 text-[11px] text-slate-400 md:flex">
-            <span className="flex items-center gap-1.5">
-              <Icon name="solar:diploma-verified-bold" className="text-[#0E8368]" /> CISIA &amp; TOLC
-            </span>
-            <span className="size-1 rounded-full bg-slate-700" />
-            <span>Entretien Consulaire IA</span>
-            <span className="size-1 rounded-full bg-slate-700" />
-            <span>Centre Brazzaville</span>
-          </div>
-          <a href="#test-gratuit" className="group flex items-center gap-1.5 text-xs font-medium text-[#2DD4BF] transition-colors duration-300 hover:text-white">
-            <span>Diagnostic gratuit</span>
-            <Icon name="solar:arrow-right-linear" size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
-          </a>
-        </div>
-      </div>
-
       {/* En-tête flottant */}
       <header className="sticky top-4 z-50 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between rounded-full border border-white/[0.08] bg-[#0D131F]/85 px-5 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all duration-500 hover:border-white/[0.18]">
