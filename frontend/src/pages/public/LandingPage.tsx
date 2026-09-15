@@ -8,6 +8,11 @@ import cardEval from '../../assets/landing/cards/c1-evaluation.jpg';
 import cardTests from '../../assets/landing/cards/c2-tests.jpg';
 import cardEntretien from '../../assets/landing/cards/c3-entretien.jpg';
 import cardDocs from '../../assets/landing/cards/c4-documents.jpg';
+import imgBooks from '../../assets/landing/cards/m-books.jpg';
+import imgExam from '../../assets/landing/cards/m-exam.jpg';
+import imgAi from '../../assets/landing/cards/m-ai.jpg';
+import imgPlanning from '../../assets/landing/cards/m-planning.jpg';
+import imgStudy from '../../assets/landing/cards/m-study.jpg';
 
 // Landing page « cockpit » (design fourni, reproduit fidèlement). Page autonome :
 // elle porte son propre bandeau, en-tête, pied de page et bouton WhatsApp, hors du
@@ -254,13 +259,15 @@ export function LandingPage() {
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
             {[
-              { span: 'md:col-span-7', grad: 'bg-[#0D131F]', tag: 'TOLC-I · TOLC-E · TOLC-F · TOLC-MED', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:target-bold', title: 'Tests d’admission', text: 'Simulations chronométrées, exercices par compétence et corrections détaillées pour assimiler la logique des jurys italiens.', foot: 'Banque de plus de 1 200 questions types', wide: true },
-              { span: 'md:col-span-5', grad: 'bg-gradient-to-br from-[#0D131F] to-[#070A0F]', tag: 'Vocal & Écrit', tagCls: 'bg-[#0E8368]/20 border-[#0E8368]/40', icon: 'solar:magic-stick-3-bold', title: 'Entretien IA', text: 'Entraînez-vous à répondre à des questions réalistes avec retour pédagogique instantané sur la cohérence de vos propos.', foot: 'Entraînement illimité 24/7', wide: false },
-              { span: 'md:col-span-5', grad: 'bg-[#0D131F]', tag: 'Niveaux A1 → B2', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:book-bookmark-bold', title: 'Italien académique', text: 'Développez votre compréhension, enrichissez votre vocabulaire universitaire et préparez les certifications CILS / CELI.', foot: 'Exercices interactifs & phonétique', wide: false },
-              { span: 'md:col-span-7', grad: 'bg-[#0D131F]', tag: 'Checklist & Échéances', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:checklist-minimalistic-bold', title: 'Suivi du projet', text: 'Visualisez vos progrès, archivez vos documents préparés et suivez les échéances en direct avec vos parents et nos conseillers.', foot: 'Visibilité partagée avec le centre de Brazzaville', wide: true },
+              { span: 'md:col-span-7', grad: 'bg-[#0D131F]', img: imgExam, tag: 'TOLC-I · TOLC-E · TOLC-F · TOLC-MED', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:target-bold', title: 'Tests d’admission', text: 'Simulations chronométrées, exercices par compétence et corrections détaillées pour assimiler la logique des jurys italiens.', foot: 'Banque de plus de 1 200 questions types', wide: true },
+              { span: 'md:col-span-5', grad: 'bg-gradient-to-br from-[#0D131F] to-[#070A0F]', img: imgAi, tag: 'Vocal & Écrit', tagCls: 'bg-[#0E8368]/20 border-[#0E8368]/40', icon: 'solar:magic-stick-3-bold', title: 'Entretien IA', text: 'Entraînez-vous à répondre à des questions réalistes avec retour pédagogique instantané sur la cohérence de vos propos.', foot: 'Entraînement illimité 24/7', wide: false },
+              { span: 'md:col-span-5', grad: 'bg-[#0D131F]', img: imgBooks, tag: 'Niveaux A1 → B2', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:book-bookmark-bold', title: 'Italien académique', text: 'Développez votre compréhension, enrichissez votre vocabulaire universitaire et préparez les certifications CILS / CELI.', foot: 'Exercices interactifs & phonétique', wide: false },
+              { span: 'md:col-span-7', grad: 'bg-[#0D131F]', img: imgPlanning, tag: 'Checklist & Échéances', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:checklist-minimalistic-bold', title: 'Suivi du projet', text: 'Visualisez vos progrès, archivez vos documents préparés et suivez les échéances en direct avec vos parents et nos conseillers.', foot: 'Visibilité partagée avec le centre de Brazzaville', wide: true },
             ].map((mod, i) => (
-              <div key={mod.title} style={{ transitionDelay: `${i * 90}ms` }} className={`reveal group flex flex-col justify-between space-y-8 rounded-3xl border border-white/[0.08] ${mod.grad} p-8 transition-all duration-500 hover:-translate-y-2 hover:border-[#0E8368] hover:shadow-[0_20px_40px_rgba(14,131,104,0.2)] sm:p-10 ${mod.span}`}>
-                <div className="space-y-4">
+              <div key={mod.title} style={{ transitionDelay: `${i * 90}ms` }} className={`reveal group relative flex flex-col justify-between space-y-8 overflow-hidden rounded-3xl border border-white/[0.08] ${mod.grad} p-8 transition-all duration-500 hover:-translate-y-2 hover:border-[#0E8368] hover:shadow-[0_20px_40px_rgba(14,131,104,0.2)] sm:p-10 ${mod.span}`}>
+                <img src={mod.img} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35 transition-transform duration-700 group-hover:scale-105" />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#070A0F]/92 via-[#070A0F]/80 to-[#070A0F]/55" />
+                <div className="relative z-10 space-y-4">
                   <div className="flex items-center justify-between">
                     <span className={`rounded-full border px-3.5 py-1 text-[11px] font-bold text-[#2DD4BF] ${mod.tagCls}`}>{mod.tag}</span>
                     <Icon name={mod.icon} size={24} className="text-[#2DD4BF] transition-transform duration-300 group-hover:scale-110" />
@@ -268,7 +275,7 @@ export function LandingPage() {
                   <h3 className="font-heading text-2xl font-bold text-white">{mod.title}</h3>
                   <p className={`text-sm leading-relaxed text-slate-300 ${mod.wide ? 'max-w-lg' : ''}`}>{mod.text}</p>
                 </div>
-                <div className="flex items-center justify-between border-t border-white/[0.06] pt-4 text-xs font-semibold text-[#2DD4BF]">
+                <div className="relative z-10 flex items-center justify-between border-t border-white/[0.06] pt-4 text-xs font-semibold text-[#2DD4BF]">
                   <span>{mod.foot}</span>
                   <Icon name="solar:arrow-right-linear" size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
                 </div>
@@ -415,17 +422,21 @@ export function LandingPage() {
           </div>
           <div className="mx-auto max-w-4xl space-y-6">
             {[
-              { top: 'top-28', border: 'border-white/[0.1]', bg: 'bg-[#0D131F]', shadow: 'shadow-[0_-10px_30px_rgba(0,0,0,0.6)]', badge: 'bg-[#0E8368] text-white', num: '1', tagCls: 'text-[#2DD4BF]', tag: 'Étape 1 · Diagnostic', title: 'Évaluez votre niveau initial', text: "Passez un test diagnostique gratuit de 10 minutes pour situer vos compétences en logique et votre niveau d'italien de départ." },
-              { top: 'top-32', border: 'border-white/[0.14]', bg: 'bg-[#0F1726]', shadow: 'shadow-[0_-15px_35px_rgba(0,0,0,0.7)]', badge: 'bg-white text-[#070A0F]', num: '2', tagCls: 'text-white', tag: 'Étape 2 · Entraînement', title: 'Suivez un parcours personnalisé', text: 'Accédez aux séries d’exercices ciblées selon votre filière et participez aux séances de cours au centre de Brazzaville ou en ligne.' },
-              { top: 'top-36', border: 'border-white/[0.18]', bg: 'bg-[#111C30]', shadow: 'shadow-[0_-20px_40px_rgba(0,0,0,0.85)]', badge: 'bg-[#E2583E] text-white', num: '3', tagCls: 'text-[#E2583E]', tag: 'Étape 3 · Finalisation', title: 'Préparez vos tests et votre entretien consulaire', text: "Multipliez les simulations chronométrées et les entretiens oraux avec l'Agent IA jusqu'à maîtriser parfaitement votre dossier." },
+              { top: 'top-28', border: 'border-white/[0.1]', bg: 'bg-[#0D131F]', shadow: 'shadow-[0_-10px_30px_rgba(0,0,0,0.6)]', badge: 'bg-[#0E8368] text-white', num: '1', tagCls: 'text-[#2DD4BF]', tag: 'Étape 1 · Diagnostic', title: 'Évaluez votre niveau initial', text: "Passez un test diagnostique gratuit de 10 minutes pour situer vos compétences en logique et votre niveau d'italien de départ.", img: cardEval },
+              { top: 'top-32', border: 'border-white/[0.14]', bg: 'bg-[#0F1726]', shadow: 'shadow-[0_-15px_35px_rgba(0,0,0,0.7)]', badge: 'bg-white text-[#070A0F]', num: '2', tagCls: 'text-white', tag: 'Étape 2 · Entraînement', title: 'Suivez un parcours personnalisé', text: 'Accédez aux séries d’exercices ciblées selon votre filière et participez aux séances de cours au centre de Brazzaville ou en ligne.', img: imgStudy },
+              { top: 'top-36', border: 'border-white/[0.18]', bg: 'bg-[#111C30]', shadow: 'shadow-[0_-20px_40px_rgba(0,0,0,0.85)]', badge: 'bg-[#E2583E] text-white', num: '3', tagCls: 'text-[#E2583E]', tag: 'Étape 3 · Finalisation', title: 'Préparez vos tests et votre entretien consulaire', text: "Multipliez les simulations chronométrées et les entretiens oraux avec l'Agent IA jusqu'à maîtriser parfaitement votre dossier.", img: cardEntretien },
             ].map((step) => (
-              <div key={step.num} className={`sticky ${step.top} space-y-4 rounded-3xl border ${step.border} ${step.bg} p-8 ${step.shadow} transition-all duration-500 hover:border-[#0E8368] sm:p-10`}>
-                <div className="flex items-center justify-between">
-                  <div className={`flex size-12 items-center justify-center rounded-2xl font-heading text-base font-extrabold shadow-md ${step.badge}`}>{step.num}</div>
-                  <span className={`rounded-full bg-white/[0.05] px-3 py-1 text-xs font-semibold ${step.tagCls}`}>{step.tag}</span>
+              <div key={step.num} className={`sticky ${step.top} overflow-hidden rounded-3xl border ${step.border} ${step.bg} p-8 ${step.shadow} transition-colors duration-500 hover:border-[#0E8368] sm:p-10`}>
+                <img src={step.img} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35" />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#070A0F]/92 via-[#070A0F]/82 to-[#070A0F]/55" />
+                <div className="relative z-10 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className={`flex size-12 items-center justify-center rounded-2xl font-heading text-base font-extrabold shadow-md ${step.badge}`}>{step.num}</div>
+                    <span className={`rounded-full bg-white/[0.05] px-3 py-1 text-xs font-semibold ${step.tagCls}`}>{step.tag}</span>
+                  </div>
+                  <h3 className="font-heading text-xl font-bold text-white sm:text-2xl">{step.title}</h3>
+                  <p className="text-xs leading-relaxed text-slate-300 sm:text-sm">{step.text}</p>
                 </div>
-                <h3 className="font-heading text-xl font-bold text-white sm:text-2xl">{step.title}</h3>
-                <p className="text-xs leading-relaxed text-slate-300 sm:text-sm">{step.text}</p>
               </div>
             ))}
           </div>
