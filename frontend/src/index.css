@@ -1,35 +1,60 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Marque italienne (tricolore : vert / blanc-crème / rouge) */
-  --color-verde: #008c45;
-  --color-verde-dark: #006b35;
-  --color-rosso: #cd212a;
-  --color-rosso-dark: #a81a22;
-  --color-panna: #f9f7f2;
-  --color-panna-alt: #f2efe6; /* surface secondaire discrète */
+  /* « Warm Institutional Modernism » — prestige académique européen, chaleur rassurante,
+     modernité sobre. Palette ancrée dans le bleu nuit et le vert cyprès, dynamisée par
+     une terre cuite réservée aux actions à forte intention. Aucun cliché touristique. */
 
-  /* Typographie : titres en serif académique (Crimson Pro), corps en police système
-     (rendu instantané, adapté aux connexions lentes — ENF-03). */
-  --font-serif: 'Crimson Pro', ui-serif, Georgia, 'Times New Roman', serif;
+  /* Bleu nuit (structure, en-têtes, autorité institutionnelle et gravité diplomatique) */
+  --color-notte: #0f2038;
+  --color-notte-light: #1c3251;
+  --color-notte-dark: #0a1626;
+
+  /* Vert cyprès (avancement scolaire, jalons, validations — couleur de travail principale) */
+  --color-verde: #1e6b52;
+  --color-verde-dark: #17513e;
+
+  /* Terre cuite / brique italienne (conversion, démarrage de simulation, échéances) */
+  --color-terracotta: #d94826;
+  --color-terracotta-dark: #b8391c;
+
+  /* Rouge réservé aux erreurs et aux états dangereux (distinct de la terre cuite) */
+  --color-rosso: #ba1a1a;
+  --color-rosso-dark: #93000a;
+
+  /* Toiles chaudes : albâtre « papier de livre » (repos oculaire) et blanc pur pour l'élévation */
+  --color-panna: #fbf9f5;
+  --color-panna-alt: #f2ede4;
+  --color-sand: #e8e2d9; /* liseré chaud, structure sans dureté optique */
+
+  /* Typographie : titres éditoriaux (Newsreader), interface (Plus Jakarta Sans).
+     Fallbacks système d'abord : rendu instantané sur connexions lentes (ENF-03). */
+  --font-serif: 'Newsreader', ui-serif, Georgia, 'Times New Roman', serif;
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
 
-  --radius-card: 0.875rem;
+  --radius-card: 1rem; /* conteneurs (cartes de section, tuiles) — rounded-lg du design */
+
+  /* Élévation « empilement tonal chaud » — pas d'ombres lourdes ni de glassmorphisme. */
+  --shadow-e1: 0 2px 8px rgba(15, 32, 56, 0.04);
+  --shadow-e2: 0 8px 24px rgba(15, 32, 56, 0.08), 0 2px 4px rgba(15, 32, 56, 0.03);
 }
 
 @layer base {
   body {
-    @apply bg-panna text-stone-900 antialiased;
+    @apply bg-panna text-stone-800 antialiased;
     font-family: var(--font-sans);
   }
 
-  /* Titres en serif : hiérarchie « éditoriale » sans changer le balisage existant. */
+  /* Titres en serif éditorial : hiérarchie « livre » sans changer le balisage existant. */
   h1,
   h2,
   h3 {
     font-family: var(--font-serif);
-    letter-spacing: -0.01em;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--color-notte);
   }
   h1 {
     text-wrap: balance;
@@ -43,7 +68,7 @@
   }
 
   ::selection {
-    background: color-mix(in srgb, var(--color-verde) 22%, transparent);
+    background: color-mix(in srgb, var(--color-verde) 20%, transparent);
   }
 
   /* Respect de prefers-reduced-motion : on neutralise animations et transitions. */
@@ -59,24 +84,75 @@
   }
 }
 
-@utility btn {
-  @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50;
+/* ── Landing page « cockpit » (dark) — styles cantonnés à la racine .landing ──
+   Polices propres au design (Inter / Plus Jakarta Sans / Playfair) sans toucher
+   au reste du site, et animation du bandeau défilant. */
+.landing {
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
+.landing .font-sans {
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+.landing .font-heading {
+  font-family: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+.landing .font-serif {
+  font-family: 'Playfair Display', ui-serif, Georgia, serif;
+}
+.landing .font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+/* La landing gère sa propre typo de titres : on neutralise le serif éditorial global. */
+.landing h1,
+.landing h2,
+.landing h3 {
+  font-family: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Boutons — base commune. */
+@utility btn {
+  @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50;
+}
+/* Action principale de l'app (vert cyprès : progression, validation, soumission). */
 @utility btn-primary {
-  @apply btn bg-verde text-white shadow-sm hover:bg-verde-dark;
+  @apply btn bg-verde text-white shadow-sm hover:bg-verde-dark hover:shadow-md;
+}
+/* Action à forte conversion (terre cuite : évaluation, démarrage de simulation, RDV). */
+@utility btn-cta {
+  @apply btn bg-terracotta text-white shadow-md hover:bg-terracotta-dark hover:shadow-lg;
+}
+/* Action structurante académique (bleu nuit plein). */
+@utility btn-notte {
+  @apply btn bg-notte text-white shadow-sm hover:bg-notte-light hover:shadow-md;
 }
 @utility btn-secondary {
-  @apply btn border border-stone-300 bg-white text-stone-800 hover:border-stone-400 hover:bg-stone-50;
+  @apply btn border border-sand bg-white text-notte hover:border-notte/30 hover:bg-panna-alt;
 }
 @utility btn-danger {
   @apply btn border border-rosso/30 bg-white text-rosso hover:border-rosso/50 hover:bg-rosso/5;
 }
 @utility input {
-  @apply w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-verde focus:ring-2 focus:ring-verde/20;
+  @apply w-full rounded-lg border border-sand bg-white px-3 py-2 text-sm text-notte outline-none transition-colors focus:border-notte focus:ring-2 focus:ring-notte/15;
 }
 @utility label {
-  @apply mb-1 block text-sm font-medium text-stone-700;
+  @apply mb-1 block text-sm font-semibold text-notte;
 }
+/* Carte — blanc pur sur albâtre, liseré sable, ombre ambiante douce (élévation 1). */
 @utility card {
-  @apply rounded-[var(--radius-card)] border border-stone-200/80 bg-white p-5 shadow-sm;
+  @apply rounded-[var(--radius-card)] border border-sand bg-white p-5;
+  box-shadow: var(--shadow-e1);
+}
+/* Étiquette de métadonnée en capitales espacées (label-sm du design). */
+@utility eyebrow {
+  @apply text-xs font-bold uppercase tracking-[0.05em];
 }

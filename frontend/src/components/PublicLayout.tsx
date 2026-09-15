@@ -65,27 +65,32 @@ export function PublicLayout() {
   ];
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `rounded-md px-3 py-2 text-sm font-medium ${isActive ? 'text-verde-dark' : 'text-stone-700 hover:text-stone-950'}`;
+    `rounded-md px-3 py-2 text-sm font-semibold transition-colors ${
+      isActive ? 'text-verde' : 'text-stone-600 hover:text-notte'
+    }`;
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-20 border-b border-stone-200 bg-panna/95 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-sand bg-panna/90 shadow-[0_1px_8px_rgba(15,32,56,0.04)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-          <Link to="/" aria-label={`${name} — accueil`}>
+          <Link to="/" aria-label={`${name} — accueil`} className="text-notte">
             <Logo className="text-lg" name={name} />
           </Link>
-          <nav aria-label="Navigation principale" className="ml-auto hidden items-center md:flex">
+          <nav aria-label="Navigation principale" className="ml-auto hidden items-center gap-1 lg:flex">
             {nav.map((item) => (
               <NavLink key={item.to} to={item.to} className={linkClass}>
                 {item.label}
               </NavLink>
             ))}
-            <Link to="/connexion" className="btn-secondary ml-2">
+            <Link to="/connexion" className="ml-2 rounded-md px-3 py-2 text-sm font-semibold text-notte hover:text-verde">
               Espace membre
+            </Link>
+            <Link to="/test-de-niveau" className="btn-cta ml-1">
+              Commencer mon évaluation
             </Link>
           </nav>
           <button
-            className="btn-secondary ml-auto md:hidden"
+            className="btn-secondary ml-auto lg:hidden"
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
             onClick={() => setMenuOpen((open) => !open)}
@@ -94,14 +99,17 @@ export function PublicLayout() {
           </button>
         </div>
         {menuOpen && (
-          <nav id="mobile-menu" aria-label="Navigation mobile" className="flex flex-col border-t border-stone-200 px-4 py-2 md:hidden">
+          <nav id="mobile-menu" aria-label="Navigation mobile" className="flex flex-col gap-1 border-t border-sand px-4 py-3 lg:hidden">
             {nav.map((item) => (
               <NavLink key={item.to} to={item.to} className={linkClass}>
                 {item.label}
               </NavLink>
             ))}
-            <Link to="/connexion" className="rounded-md px-3 py-2 text-sm font-medium text-verde-dark">
+            <Link to="/connexion" className="rounded-md px-3 py-2 text-sm font-semibold text-notte">
               Espace membre
+            </Link>
+            <Link to="/test-de-niveau" className="btn-cta mt-1">
+              Commencer mon évaluation
             </Link>
           </nav>
         )}
@@ -111,8 +119,8 @@ export function PublicLayout() {
         <Outlet context={{ site, failed } satisfies PublicSiteContext} />
       </main>
 
-      <footer className="bg-stone-900 text-stone-200">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-3">
+      <footer className="bg-notte text-stone-300">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-3">
           <div className="space-y-2">
             <Logo className="text-lg text-white" name={name} />
             {settings?.tagline && <p className="text-sm text-stone-400">{settings.tagline}</p>}
@@ -141,7 +149,7 @@ export function PublicLayout() {
           </nav>
           {settings && <ContactDetails settings={settings} className="text-sm" />}
         </div>
-        <p className="border-t border-stone-800 px-4 py-4 text-center text-xs text-stone-500">
+        <p className="border-t border-notte-light px-4 py-4 text-center text-xs text-stone-400">
           Simulations de type TOLC — plateforme indépendante, non affiliée au CISIA. Les informations sur les visas doivent être vérifiées auprès de l’ambassade d’Italie.
         </p>
       </footer>

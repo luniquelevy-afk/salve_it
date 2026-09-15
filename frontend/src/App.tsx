@@ -10,7 +10,7 @@ import { ChangePasswordPage } from './pages/auth/ChangePasswordPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { MfaPage } from './pages/auth/MfaPage';
 import { NotFoundPage } from './pages/NotFoundPage';
-import { HomePage } from './pages/public/HomePage';
+import { LandingPage } from './pages/public/LandingPage';
 import { PublicLayout } from './components/PublicLayout';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { ChecklistPage } from './pages/admin/ChecklistPage';
@@ -47,8 +47,8 @@ import { TeacherDashboard } from './pages/teacher/TeacherDashboard';
 export function App() {
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
       <Route element={<PublicLayout />}>
-        <Route path="/" element={<HomePage />} />
         <Route path="/formations" element={<ProgramsPage />} />
         <Route path="/formations/:slug" element={<ProgramPage />} />
         <Route path="/test-de-niveau" element={<LevelTestPage />} />
