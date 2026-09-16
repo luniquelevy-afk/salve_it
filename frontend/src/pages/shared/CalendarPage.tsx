@@ -1,179 +1,113 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { useAuth } from '../../auth/auth-context';
-import { AttendanceSheet } from '../../components/AttendanceSheet';
-import { ErrorBanner } from '../../components/ErrorBanner';
-import { api, ApiError } from '../../lib/api';
-import { formatDay, formatTime, localDayKey } from '../../lib/format';
-import type { ClassSession, ClassSummary } from '../../lib/types';
+import { Icon } from '../public/landing-icon';
 
-const EMPTY_FORM = { classId: '', title: '', date: '', startTime: '18:00', endTime: '19:30', location: '' };
-
+// Design fourni « Calendrier & Échéances » (contenu de démonstration), coquille sombre.
 export function CalendarPage() {
-  const { me } = useAuth();
-  const isStaff = me?.role === 'teacher' || me?.role === 'admin';
-  const [sessions, setSessions] = useState<ClassSession[] | null>(null);
-  const [classes, setClasses] = useState<ClassSummary[]>([]);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [showForm, setShowForm] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [attendanceFor, setAttendanceFor] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    try {
-      const response = await api<{ sessions: ClassSession[] }>('/api/calendar');
-      setSessions(response.sessions);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Impossible de charger le calendrier.');
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-    if (isStaff) {
-      api<{ classes: ClassSummary[] }>('/api/classes')
-        .then((response) => setClasses(response.classes.filter((klass) => klass.isActive)))
-        .catch(() => setClasses([]));
-    }
-  }, [load, isStaff]);
-
-  const days = useMemo(() => {
-    const groups = new Map<string, ClassSession[]>();
-    for (const session of sessions ?? []) {
-      const key = localDayKey(session.startsAt);
-      groups.set(key, [...(groups.get(key) ?? []), session]);
-    }
-    return [...groups.entries()];
-  }, [sessions]);
-
-  async function create(event: FormEvent) {
-    event.preventDefault();
-    const startsAt = new Date(`${form.date}T${form.startTime}`);
-    const endsAt = new Date(`${form.date}T${form.endTime}`);
-    if (endsAt <= startsAt) return setError('L’heure de fin doit être après l’heure de début.');
-    setSaving(true);
-    setError(null);
-    try {
-      await api('/api/calendar', {
-        method: 'POST',
-        body: { classId: form.classId, title: form.title, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), location: form.location || null },
-      });
-      setForm({ ...EMPTY_FORM, classId: form.classId });
-      setShowForm(false);
-      await load();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Enregistrement impossible.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function remove(session: ClassSession) {
-    if (!window.confirm(`Supprimer la séance « ${session.title} » ?`)) return;
-    try {
-      await api(`/api/calendar/${session.id}`, { method: 'DELETE' });
-      if (attendanceFor === session.id) setAttendanceFor(null);
-      await load();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Suppression impossible.');
-    }
-  }
+  const days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+  const leading = [27, 28, 29, 30, 31];
+  const month = Array.from({ length: 28 }, (_, i) => i + 1);
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="cours space-y-8">
+      {/* Titre de page */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Calendrier des cours</h1>
-          <p className="text-stone-600">Séances de la veille et des 60 prochains jours.</p>
+          <div className="flex items-center gap-1.5">
+            <h1 className="font-heading text-xl font-bold text-white sm:text-2xl">Calendrier &amp; Échéances</h1>
+            <Icon name="twemoji:flag-congo-brazzaville" size={16} />
+            <Icon name="twemoji:flag-italy" size={16} />
+          </div>
+          <p className="text-xs text-slate-400">Ateliers Brazzaville, Sessions IA &amp; Dates Universitaly</p>
         </div>
-        {isStaff && classes.length > 0 && (
-          <button className="btn-primary ml-auto" onClick={() => setShowForm((open) => !open)}>
-            {showForm ? 'Fermer' : 'Ajouter une séance'}
-          </button>
-        )}
+        <button className="rounded-full bg-[#0E8368] px-4 py-1.5 text-xs font-bold text-white transition-colors hover:bg-[#0E8368]/80">+ Prendre RDV Enseignant</button>
       </div>
 
-      <ErrorBanner message={error} />
-
-      {showForm && (
-        <form onSubmit={create} className="card grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="label" htmlFor="s-class">Classe</label>
-            <select id="s-class" className="input" required value={form.classId} onChange={(e) => setForm({ ...form, classId: e.target.value })}>
-              <option value="">— Choisir —</option>
-              {classes.map((klass) => (
-                <option key={klass.id} value={klass.id}>
-                  {klass.name}
-                </option>
-              ))}
-            </select>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Séances & échéances */}
+        <div className="space-y-4 lg:col-span-7">
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading text-base font-bold text-white">Prochaines Séances &amp; Échéances Clés</h2>
+            <span className="text-xs text-[#2DD4BF]">Février - Mars 2025</span>
           </div>
-          <div>
-            <label className="label" htmlFor="s-title">Intitulé</label>
-            <input id="s-title" className="input" required maxLength={200} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-          </div>
-          <div>
-            <label className="label" htmlFor="s-date">Date</label>
-            <input id="s-date" type="date" className="input" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="label" htmlFor="s-start">Début</label>
-              <input id="s-start" type="time" className="input" required value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} />
-            </div>
-            <div>
-              <label className="label" htmlFor="s-end">Fin</label>
-              <input id="s-end" type="time" className="input" required value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} />
-            </div>
-          </div>
-          <div className="sm:col-span-2">
-            <label className="label" htmlFor="s-location">Lieu (facultatif)</label>
-            <input id="s-location" className="input" maxLength={200} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
-          </div>
-          <div className="sm:col-span-2">
-            <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? 'Enregistrement…' : 'Enregistrer'}
-            </button>
-          </div>
-        </form>
-      )}
-
-      {sessions !== null && sessions.length === 0 && (
-        <p className="text-stone-500">{me?.role === 'student' ? 'Aucune séance prévue pour vos classes.' : 'Aucune séance prévue.'}</p>
-      )}
-
-      {days.map(([day, daySessions]) => (
-        <section key={day} className="space-y-2">
-          <h2 className="font-semibold text-stone-700">{formatDay(daySessions[0]!.startsAt)}</h2>
-          {daySessions.map((session) => (
-            <div key={session.id} className="space-y-2">
-              <article className="card flex flex-wrap items-center gap-3 py-3">
-                <span className="font-mono text-sm font-semibold tabular-nums text-verde-dark">
-                  {formatTime(session.startsAt)} – {formatTime(session.endsAt)}
-                </span>
+          <div className="space-y-3">
+            <div className="flex items-start justify-between gap-4 rounded-3xl border border-[#0E8368]/30 bg-gradient-to-r from-[#0E8368]/10 to-[#0D131F] p-5">
+              <div className="flex items-start gap-3.5">
+                <div className="flex size-11 shrink-0 flex-col items-center justify-center rounded-2xl bg-[#0E8368] text-xs font-bold text-white shadow-sm"><span>JEU</span><span className="text-sm">20</span></div>
                 <div>
-                  <p className="font-medium">{session.title}</p>
-                  <p className="text-xs text-stone-500">
-                    {session.className}
-                    {session.location && ` · ${session.location}`}
-                  </p>
-                </div>
-                {session.canManage && (
-                  <div className="ml-auto flex gap-2">
-                    <button className="btn-secondary px-3 py-1 text-xs" onClick={() => setAttendanceFor(attendanceFor === session.id ? null : session.id)}>
-                      {attendanceFor === session.id ? 'Masquer la présence' : 'Présence'}
-                    </button>
-                    <button className="btn-danger px-3 py-1 text-xs" onClick={() => void remove(session)}>
-                      Supprimer
-                    </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-md bg-[#0E8368]/20 px-2 py-0.5 text-[10px] font-bold text-[#2DD4BF]">En présentiel · Brazzaville</span>
+                    <span className="text-[11px] text-slate-400">16:00 - 18:00</span>
                   </div>
-                )}
-              </article>
-              {attendanceFor === session.id && <AttendanceSheet sessionId={session.id} onClose={() => setAttendanceFor(null)} />}
+                  <h3 className="mt-1 font-heading text-sm font-bold text-white">Atelier d&rsquo;Expression Orale Italienne &amp; Entretien</h3>
+                  <p className="text-xs text-slate-300">Salle A2 · Centre de langue partenaire Brazzaville</p>
+                </div>
+              </div>
+              <button className="shrink-0 rounded-xl bg-white/[0.08] px-3 py-2 text-xs font-semibold text-white hover:bg-white/[0.15]">Détails</button>
             </div>
-          ))}
-        </section>
-      ))}
+            <div className="flex items-start justify-between gap-4 rounded-3xl border border-white/[0.08] bg-[#0D131F] p-5">
+              <div className="flex items-start gap-3.5">
+                <div className="flex size-11 shrink-0 flex-col items-center justify-center rounded-2xl bg-[#38BDF8] text-xs font-bold text-[#070A0F] shadow-sm"><span>SAM</span><span className="text-sm">22</span></div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-md bg-[#38BDF8]/20 px-2 py-0.5 text-[10px] font-bold text-[#38BDF8]">En ligne · Plateforme IA</span>
+                    <span className="text-[11px] text-slate-400">10:00 - 11:30</span>
+                  </div>
+                  <h3 className="mt-1 font-heading text-sm font-bold text-white">Examen Blanc TOLC-E National Synchrone</h3>
+                  <p className="text-xs text-slate-300">Session chronométrée avec classement instantané</p>
+                </div>
+              </div>
+              <button className="shrink-0 rounded-xl bg-[#0E8368] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#0E8368]/80">Rejoindre</button>
+            </div>
+            <div className="flex items-start justify-between gap-4 rounded-3xl border border-[#E2583E]/30 bg-gradient-to-r from-[#E2583E]/10 to-[#0D131F] p-5">
+              <div className="flex items-start gap-3.5">
+                <div className="flex size-11 shrink-0 flex-col items-center justify-center rounded-2xl bg-[#E2583E] text-xs font-bold text-white shadow-sm"><span>MAR</span><span className="text-sm">15</span></div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-md bg-[#E2583E]/20 px-2 py-0.5 text-[10px] font-bold text-[#E2583E]">Date Limite Consulat &amp; Universitaly</span>
+                    <span className="text-[11px] text-slate-400">Mars 2025</span>
+                  </div>
+                  <h3 className="mt-1 font-heading text-sm font-bold text-white">Clôture des demandes de Déclaration de Valeur (DoV)</h3>
+                  <p className="text-xs text-slate-300">Vérifiez la validation de tous vos relevés avec votre conseiller</p>
+                </div>
+              </div>
+              <button className="shrink-0 rounded-xl bg-[#E2583E] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#c9452d]">Voir checklist</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mini-calendrier + conseiller */}
+        <div className="space-y-4 lg:col-span-5">
+          <div className="space-y-4 rounded-3xl border border-white/[0.08] bg-[#0D131F] p-6">
+            <div className="flex items-center justify-between">
+              <h3 className="font-heading text-sm font-bold text-white">Février 2025</h3>
+              <div className="flex gap-2 text-slate-400">
+                <button className="flex size-6 items-center justify-center rounded-lg bg-white/[0.05] hover:text-white">‹</button>
+                <button className="flex size-6 items-center justify-center rounded-lg bg-white/[0.05] hover:text-white">›</button>
+              </div>
+            </div>
+            <div className="grid grid-cols-7 gap-2 text-center text-[11px]">
+              {days.map((d, i) => (<span key={`d${i}`} className="font-bold text-slate-500">{d}</span>))}
+              {leading.map((d) => (<span key={`l${d}`} className="p-2 text-slate-600">{d}</span>))}
+              {month.map((d) => {
+                let cls = 'p-2 text-slate-300';
+                if (d === 20) cls = 'rounded-xl bg-[#0E8368] p-2 font-bold text-white';
+                else if (d === 22) cls = 'rounded-xl bg-[#38BDF8] p-2 font-bold text-[#070A0F]';
+                return (<span key={`m${d}`} className={cls}>{d}</span>);
+              })}
+            </div>
+          </div>
+          <div className="space-y-3 rounded-3xl border border-white/[0.08] bg-[#0D131F] p-5">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-300">Votre Conseiller Dédié à Brazzaville</p>
+            <div className="flex items-center gap-3">
+              <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Conseiller" loading="lazy" className="size-10 rounded-full border border-[#0E8368] object-cover" />
+              <div>
+                <p className="text-xs font-bold text-white">Jean-Pierre Mabiala</p>
+                <p className="text-[11px] text-[#2DD4BF]">Conseiller orientation Italie · Centre Brazzaville</p>
+              </div>
+            </div>
+            <button className="w-full rounded-xl border border-[#0E8368]/30 bg-[#0E8368]/20 py-2.5 text-xs font-bold text-[#2DD4BF] transition-colors hover:bg-[#0E8368] hover:text-white">Écrire sur WhatsApp (+242 06 ...)</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -14,12 +14,13 @@ import { LandingPage } from './pages/public/LandingPage';
 import { PublicLayout } from './components/PublicLayout';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { ChecklistPage } from './pages/admin/ChecklistPage';
-import { DocumentsPage } from './pages/student/DocumentsPage';
+import { DocumentsProfilPage } from './pages/student/DocumentsProfilPage';
+import { ExercicesDevoirsPage } from './pages/student/ExercicesDevoirsPage';
+import { SimulationsEntretienPage } from './pages/student/SimulationsEntretienPage';
 import { ProspectsPage } from './pages/admin/ProspectsPage';
 import { TestTemplatesPage } from './pages/admin/TestTemplatesPage';
 import { StaffEmbassyReportPage } from './pages/staff/StaffEmbassyReportPage';
 import { StudentFollowUpPage } from './pages/staff/StudentFollowUpPage';
-import { ProfilePage } from './pages/student/ProfilePage';
 import { SiteContentPage } from './pages/admin/SiteContentPage';
 import { ContactPage } from './pages/public/ContactPage';
 import { FaqPage, GalleryPage } from './pages/public/FaqGalleryPages';
@@ -34,13 +35,9 @@ import { QuestionsPage } from './pages/staff/QuestionsPage';
 import { CoursePage } from './pages/student/CoursePage';
 import { CoursesPage } from './pages/student/CoursesPage';
 import { ExercisePage } from './pages/student/ExercisePage';
-import { ExercisesPage } from './pages/student/ExercisesPage';
-import { EmbassyPage } from './pages/student/EmbassyPage';
 import { EmbassySessionPage } from './pages/student/EmbassySessionPage';
-import { HomeworkPage } from './pages/student/HomeworkPage';
 import { SimulationResultsPage } from './pages/student/SimulationResultsPage';
 import { SimulationRunPage } from './pages/student/SimulationRunPage';
-import { SimulationsPage } from './pages/student/SimulationsPage';
 import { StudentDashboard } from './pages/student/StudentDashboard';
 import { TeacherDashboard } from './pages/teacher/TeacherDashboard';
 
@@ -66,18 +63,18 @@ export function App() {
           <Route element={<AppShell />}>
             <Route element={<RequireAuth roles={['student']} />}>
               <Route path="/etudiant" element={<StudentDashboard />} />
-              <Route path="/etudiant/simulations" element={<SimulationsPage />} />
+              <Route path="/etudiant/simulations" element={<SimulationsEntretienPage />} />
               <Route path="/etudiant/simulations/:id" element={<SimulationRunPage />} />
               <Route path="/etudiant/simulations/:id/resultats" element={<SimulationResultsPage />} />
-              <Route path="/etudiant/entretien" element={<EmbassyPage />} />
+              <Route path="/etudiant/entretien" element={<SimulationsEntretienPage />} />
               <Route path="/etudiant/entretien/:id" element={<EmbassySessionPage />} />
               <Route path="/etudiant/cours" element={<CoursesPage />} />
               <Route path="/etudiant/cours/:id" element={<CoursePage />} />
-              <Route path="/etudiant/exercices" element={<ExercisesPage />} />
+              <Route path="/etudiant/exercices" element={<ExercicesDevoirsPage />} />
               <Route path="/etudiant/exercices/:id" element={<ExercisePage />} />
-              <Route path="/etudiant/devoirs" element={<HomeworkPage />} />
-              <Route path="/etudiant/profil" element={<ProfilePage />} />
-              <Route path="/etudiant/documents" element={<DocumentsPage />} />
+              <Route path="/etudiant/devoirs" element={<ExercicesDevoirsPage />} />
+              <Route path="/etudiant/profil" element={<DocumentsProfilPage />} />
+              <Route path="/etudiant/documents" element={<DocumentsProfilPage />} />
             </Route>
             <Route element={<RequireAuth roles={['teacher', 'admin']} />}>
               <Route path="/banque-questions" element={<QuestionsPage />} />
