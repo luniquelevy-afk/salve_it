@@ -32,9 +32,9 @@ export function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
+    <main data-theme="dark" className="flex min-h-screen items-center justify-center bg-[#070A0F] p-4 text-[#F1F5F9]">
       <div className="w-full max-w-sm">
-        <Link to="/" className="mb-6 flex justify-center text-xl">
+        <Link to="/" className="mb-6 flex justify-center text-xl text-white">
           <Logo />
         </Link>
         <form onSubmit={handleSubmit} className="card space-y-4">

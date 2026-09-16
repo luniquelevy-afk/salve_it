@@ -66,14 +66,14 @@ export function PublicLayout() {
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `rounded-md px-3 py-2 text-sm font-semibold transition-colors ${
-      isActive ? 'text-verde' : 'text-stone-600 hover:text-notte'
+      isActive ? 'text-[#2DD4BF]' : 'text-slate-300 hover:text-white'
     }`;
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-20 border-b border-sand bg-panna/90 shadow-[0_1px_8px_rgba(15,32,56,0.04)] backdrop-blur-xl">
+    <div data-theme="dark" className="flex min-h-screen flex-col bg-[#070A0F] text-[#F1F5F9]">
+      <header className="sticky top-0 z-20 border-b border-white/[0.08] bg-[#070A0F]/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-          <Link to="/" aria-label={`${name} — accueil`} className="text-notte">
+          <Link to="/" aria-label={`${name} — accueil`} className="text-white">
             <Logo className="text-lg" name={name} />
           </Link>
           <nav aria-label="Navigation principale" className="ml-auto hidden items-center gap-1 lg:flex">
@@ -82,11 +82,14 @@ export function PublicLayout() {
                 {item.label}
               </NavLink>
             ))}
-            <Link to="/connexion" className="ml-2 rounded-md px-3 py-2 text-sm font-semibold text-notte hover:text-verde">
-              Espace membre
+            <Link
+              to="/connexion"
+              className="ml-2 inline-flex items-center rounded-full bg-white px-4 py-2 text-xs font-bold text-[#070A0F] transition-all duration-300 hover:bg-[#0E8368] hover:text-white"
+            >
+              Se connecter
             </Link>
-            <Link to="/test-de-niveau" className="btn-cta ml-1">
-              Commencer mon évaluation
+            <Link to="/test-de-niveau" className="ml-1 inline-flex items-center rounded-full bg-[#E2583E] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#c9452d]">
+              Évaluer mon niveau
             </Link>
           </nav>
           <button
@@ -99,17 +102,17 @@ export function PublicLayout() {
           </button>
         </div>
         {menuOpen && (
-          <nav id="mobile-menu" aria-label="Navigation mobile" className="flex flex-col gap-1 border-t border-sand px-4 py-3 lg:hidden">
+          <nav id="mobile-menu" aria-label="Navigation mobile" className="flex flex-col gap-1 border-t border-white/[0.08] px-4 py-3 lg:hidden">
             {nav.map((item) => (
               <NavLink key={item.to} to={item.to} className={linkClass}>
                 {item.label}
               </NavLink>
             ))}
-            <Link to="/connexion" className="rounded-md px-3 py-2 text-sm font-semibold text-notte">
-              Espace membre
+            <Link to="/connexion" className="mt-1 inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-bold text-[#070A0F]">
+              Se connecter
             </Link>
-            <Link to="/test-de-niveau" className="btn-cta mt-1">
-              Commencer mon évaluation
+            <Link to="/test-de-niveau" className="mt-1 inline-flex items-center justify-center rounded-full bg-[#E2583E] px-4 py-2 text-sm font-bold text-white">
+              Évaluer mon niveau
             </Link>
           </nav>
         )}
@@ -119,7 +122,7 @@ export function PublicLayout() {
         <Outlet context={{ site, failed } satisfies PublicSiteContext} />
       </main>
 
-      <footer className="bg-notte text-stone-300">
+      <footer className="border-t border-white/[0.08] bg-[#070A0F] text-slate-300">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-3">
           <div className="space-y-2">
             <Logo className="text-lg text-white" name={name} />
@@ -149,7 +152,7 @@ export function PublicLayout() {
           </nav>
           {settings && <ContactDetails settings={settings} className="text-sm" />}
         </div>
-        <p className="border-t border-notte-light px-4 py-4 text-center text-xs text-stone-400">
+        <p className="border-t border-white/[0.08] px-4 py-4 text-center text-xs text-slate-500">
           Simulations de type TOLC — plateforme indépendante, non affiliée au CISIA. Les informations sur les visas doivent être vérifiées auprès de l’ambassade d’Italie.
         </p>
       </footer>
