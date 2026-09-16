@@ -126,9 +126,6 @@ export function LandingPage() {
             <a href="#faq" className="rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-white/[0.05] hover:text-white">FAQ</a>
           </nav>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <a href="#brazzaville" className="hidden items-center whitespace-nowrap rounded-full border border-white/[0.15] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/[0.08] sm:inline-flex">
-              Contactez le centre
-            </a>
             <Link to="/connexion" className="inline-flex items-center whitespace-nowrap rounded-full bg-white px-4 py-2 text-[11px] font-bold text-[#070A0F] transition-all duration-300 hover:bg-[#0E8368] hover:text-white hover:shadow-[0_0_25px_rgba(14,131,104,0.4)] sm:px-5 sm:text-xs">
               Se connecter
             </Link>
