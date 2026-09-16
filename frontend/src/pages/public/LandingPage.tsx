@@ -6,6 +6,8 @@ import { whatsappLink } from '../../lib/public-site';
 import type { PublicSite, SiteSettings } from '../../lib/types';
 import { Icon } from './landing-icon';
 import centreBrazza from '../../assets/landing/images/q8S28WUPWgJ.jpeg';
+import italyPanorama from '../../assets/landing/images/italy-panorama.jpg';
+import etudianteItalie from '../../assets/landing/images/etudiante-italie.png';
 import cardEval from '../../assets/landing/cards/c1-evaluation.jpg';
 import cardTests from '../../assets/landing/cards/c2-tests.jpg';
 import cardEntretien from '../../assets/landing/cards/c3-entretien.jpg';
@@ -72,8 +74,24 @@ export function LandingPage() {
 
   return (
     <div className="landing relative min-h-screen overflow-x-hidden bg-[#070A0F] font-sans text-[#F1F5F9] antialiased selection:bg-[#0E8368]/30 selection:text-white">
-      {/* Décor : halos et grille en fond */}
+      {/* Décor : panorama italien lumineux (haut de page), halos et grille en fond */}
       <div className="pointer-events-none fixed inset-0 z-0">
+        {/* Panorama de l'Italie au coucher de soleil — lumière ambiante derrière le hero.
+            Un fort dégradé vers le bleu nuit (#070A0F) préserve la lisibilité du texte. */}
+        <div className="absolute inset-x-0 top-0 h-[92vh]">
+          <img
+            src={italyPanorama}
+            alt=""
+            aria-hidden
+            className="h-full w-full object-cover object-[center_30%] opacity-[0.9] [filter:brightness(1.1)saturate(1.05)]"
+          />
+          {/* Lueur chaude de coucher de soleil : la lumière du panorama irradie sur le hero. */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_55%_at_50%_18%,rgba(226,88,62,0.20)_0%,rgba(226,88,62,0.07)_35%,transparent_65%)]" />
+          {/* Voile de lisibilité : léger en haut (on laisse la lumière), plus dense derrière
+              le texte et vers le bas pour garder les écrits parfaitement lisibles. */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#070A0F]/20 via-[#070A0F]/60 to-[#070A0F]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_75%_60%_at_50%_15%,transparent_0%,rgba(7,10,15,0.22)_70%,#070A0F_100%)]" />
+        </div>
         <div className="absolute top-[-10%] left-1/2 h-[550px] w-[850px] -translate-x-1/2 rounded-full bg-gradient-to-b from-[#0E8368]/20 via-[#0E8368]/5 to-transparent blur-[140px]" />
         <div className="absolute top-[35%] right-[-10%] h-[550px] w-[550px] rounded-full bg-gradient-to-br from-[#E2583E]/15 to-transparent blur-[160px]" />
         <div className="absolute top-[70%] left-[-10%] h-[600px] w-[600px] rounded-full bg-gradient-to-tr from-[#0E8368]/15 to-transparent blur-[160px]" />
@@ -165,12 +183,17 @@ export function LandingPage() {
             {/* Colonne composition : photo du centre + cartes */}
             <div className="lg:col-span-6">
               <div className="space-y-4">
-                {/* Photo principale (stable) */}
-                <div className="reveal relative min-h-[22rem] overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0D131F] shadow-2xl sm:min-h-[24rem]" style={{ transitionDelay: '480ms' }}>
-                  <img src={centreBrazza} alt="Enseignants et étudiants du centre de langue à Brazzaville" className="h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#070A0F] via-[#070A0F]/20 to-transparent" />
+                {/* Visuel principal : l'étudiante détourée, debout sur le panorama italien. */}
+                <div className="relative min-h-[24rem] sm:min-h-[30rem]">
+                  {/* Lueur douce qui ancre la silhouette au sol. */}
+                  <div aria-hidden className="absolute inset-x-0 bottom-0 mx-auto h-2/3 w-4/5 rounded-full bg-[radial-gradient(ellipse_at_bottom,rgba(14,131,104,0.28),transparent_70%)] blur-2xl" />
+                  <img
+                    src={etudianteItalie}
+                    alt="Étudiante du centre, dictionnaire et cahier d'italien en main, devant Florence"
+                    className="rise-up relative z-10 mx-auto h-full max-h-[34rem] w-auto object-contain object-bottom drop-shadow-[0_25px_45px_rgba(0,0,0,0.55)]"
+                  />
                   {/* Carte flottante : Depuis Brazzaville */}
-                  <div className="float-slow absolute bottom-4 left-4 max-w-[15rem] rounded-2xl border border-white/10 bg-black/70 p-3 backdrop-blur-md">
+                  <div className="float-slow absolute bottom-6 left-0 z-20 max-w-[15rem] rounded-2xl border border-white/10 bg-black/70 p-3 backdrop-blur-md">
                     <div className="flex items-center gap-2">
                       <Icon name="twemoji:flag-congo-brazzaville" size={16} />
                       <p className="text-xs font-bold text-white">Depuis Brazzaville</p>
@@ -178,7 +201,7 @@ export function LandingPage() {
                     <p className="mt-0.5 text-[11px] text-slate-300">Accompagnement de proximité</p>
                   </div>
                   {/* Carte flottante : Progression étudiant */}
-                  <div className="float-slower absolute right-4 top-4 rounded-2xl border border-[#0E8368]/30 bg-[#0D131F]/90 p-3 backdrop-blur-md">
+                  <div className="float-slower absolute right-0 top-6 z-20 rounded-2xl border border-[#0E8368]/30 bg-[#0D131F]/90 p-3 backdrop-blur-md">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Progression étudiant</p>
                     <p className="font-heading text-2xl font-extrabold text-[#2DD4BF]">68 %</p>
                     <div className="mt-1 h-1.5 w-24 overflow-hidden rounded-full bg-slate-800">

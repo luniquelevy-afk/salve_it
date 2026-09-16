@@ -166,6 +166,28 @@
     transform: translateY(-8px);
   }
 }
+/* Entrée du visuel principal du hero : l'étudiante monte depuis le bas et se
+   révèle en fondu sur 3 s (déclenchée au chargement, une seule fois). */
+@keyframes riseUp {
+  from {
+    opacity: 0;
+    transform: translateY(140px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.landing .rise-up {
+  animation: riseUp 3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing .rise-up {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
 .landing .float-slow {
   animation: floaty 6s ease-in-out infinite;
 }
