@@ -8,6 +8,7 @@ import { AdminSessionSettingsPage } from './pages/admin/AdminSessionSettingsPage
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { ChangePasswordPage } from './pages/auth/ChangePasswordPage';
 import { LoginPage } from './pages/auth/LoginPage';
+import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { MfaPage } from './pages/auth/MfaPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { LandingPage } from './pages/public/LandingPage';
@@ -57,6 +58,7 @@ export function App() {
         <Route path="/contact" element={<ContactPage />} />
       </Route>
       <Route path="/connexion" element={<LoginPage />} />
+      <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
 
       <Route element={<RequireAuth />}>
         <Route element={<SessionLayout />}>

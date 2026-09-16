@@ -60,7 +60,11 @@ export function LoginPage() {
           <button type="submit" className="btn-primary w-full" disabled={submitting}>
             {submitting ? 'Connexion…' : 'Se connecter'}
           </button>
-          <p className="text-center text-xs text-stone-500">Mot de passe oublié ? Contactez l’administration du centre.</p>
+          <p className="text-center text-xs text-stone-500">
+            <Link to="/mot-de-passe-oublie" className="font-semibold text-verde hover:underline">
+              Mot de passe oublié ?
+            </Link>
+          </p>
         </form>
       </div>
     </main>
