@@ -1,8 +1,10 @@
-import { useEffect, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { api } from '../../lib/api';
+import { whatsappLink } from '../../lib/public-site';
+import type { PublicSite, SiteSettings } from '../../lib/types';
 import { Icon } from './landing-icon';
-import heroStudent from '../../assets/landing/images/zwLWRolYpET.jpeg';
 import centreBrazza from '../../assets/landing/images/q8S28WUPWgJ.jpeg';
 import cardEval from '../../assets/landing/cards/c1-evaluation.jpg';
 import cardTests from '../../assets/landing/cards/c2-tests.jpg';
@@ -26,6 +28,24 @@ export function LandingPage() {
     event.preventDefault();
     navigate('/test-de-niveau');
   };
+
+  // Coordonnées réelles du centre (repli si le backend n'est pas joignable).
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  useEffect(() => {
+    api<PublicSite>('/api/public/site')
+      .then((site) => setSettings(site.settings))
+      .catch(() => undefined);
+  }, []);
+  const centre = {
+    name: settings?.centreName && settings.centreName !== 'Salve Italia' ? settings.centreName : 'notre centre',
+    address: settings?.address ?? 'Brazzaville, République du Congo',
+    phone: settings?.phone ?? null,
+    whatsapp: settings?.whatsapp ?? null,
+    email: settings?.email ?? null,
+    hours: settings?.openingHours ?? null,
+    about: settings?.about ?? null,
+  };
+  const waHref = centre.whatsapp ? whatsappLink(centre.whatsapp) : 'https://wa.me/242000000000';
 
   // Motion : révèle les blocs marqués « reveal » quand ils entrent dans le viewport.
   useEffect(() => {
@@ -67,11 +87,17 @@ export function LandingPage() {
             <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[#0E8368] to-[#2DD4BF] font-heading text-sm font-extrabold text-white shadow-[0_4px_16px_rgba(14,131,104,0.35)] transition-transform duration-500 group-hover:rotate-6 sm:size-11 sm:rounded-2xl sm:text-base">
               SI
             </div>
-            <span className="font-heading text-base font-extrabold tracking-tight text-white transition-colors group-hover:text-[#2DD4BF] sm:text-xl">
-              Salve Italia
+            <span className="flex flex-col leading-tight">
+              <span className="font-heading text-base font-extrabold tracking-tight text-white transition-colors group-hover:text-[#2DD4BF] sm:text-lg">
+                Salve Italia
+              </span>
+              <span className="hidden text-[9px] font-semibold uppercase tracking-widest text-[#2DD4BF] sm:block">
+                Centre de langue · Brazzaville
+              </span>
             </span>
           </a>
           <nav className="hidden items-center gap-1 text-[13px] font-medium text-slate-300 md:flex">
+            <a href="#brazzaville" className="rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-white/[0.05] hover:text-white">Le centre</a>
             <a href="#vision" className="rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-white/[0.05] hover:text-white">Vision</a>
             <a href="#solutions" className="rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-white/[0.05] hover:text-white">Préparation</a>
             <a href="#ai-agent" className="flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-white/[0.05] hover:text-white">
@@ -79,13 +105,12 @@ export function LandingPage() {
               <span className="size-1.5 animate-pulse rounded-full bg-[#0E8368]" />
             </a>
             <a href="#stack-steps" className="rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-white/[0.05] hover:text-white">Étapes</a>
-            <a href="#brazzaville" className="rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-white/[0.05] hover:text-white">Centre</a>
             <a href="#faq" className="rounded-full px-3 py-1.5 transition-all duration-300 hover:bg-white/[0.05] hover:text-white">FAQ</a>
           </nav>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <Link to="/contact" className="hidden items-center whitespace-nowrap rounded-full border border-white/[0.15] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/[0.08] sm:inline-flex">
-              Contactez-nous
-            </Link>
+            <a href="#brazzaville" className="hidden items-center whitespace-nowrap rounded-full border border-white/[0.15] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/[0.08] sm:inline-flex">
+              Contactez le centre
+            </a>
             <Link to="/connexion" className="inline-flex items-center whitespace-nowrap rounded-full bg-white px-4 py-2 text-[11px] font-bold text-[#070A0F] transition-all duration-300 hover:bg-[#0E8368] hover:text-white hover:shadow-[0_0_25px_rgba(14,131,104,0.4)] sm:px-5 sm:text-xs">
               Se connecter
             </Link>
@@ -94,60 +119,90 @@ export function LandingPage() {
       </header>
 
       <main className="relative z-10 space-y-28 pb-28 sm:space-y-40">
-        {/* HERO */}
+        {/* HERO — le centre d'abord, Salve Italia comme prolongement numérique */}
         <section id="hero" className="pt-14 sm:pt-20 lg:pt-28">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl space-y-6">
-              <h1 className="font-heading text-4xl font-extrabold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl">
-                Votre projet d&rsquo;études en Italie commence ici<span className="text-[#0E8368]">.</span>
+          <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
+            {/* Colonne texte */}
+            <div className="space-y-6 lg:col-span-6">
+              <span className="reveal inline-flex items-center gap-2 rounded-full border border-[#0E8368]/30 bg-[#0E8368]/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest text-[#2DD4BF] shadow-[0_0_15px_rgba(14,131,104,0.15)]">
+                <Icon name="twemoji:flag-congo-brazzaville" size={14} />
+                Centre de langue italienne · Brazzaville
+              </span>
+              <h1 className="font-heading text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
+                <span className="reveal block" style={{ transitionDelay: '80ms' }}>Votre avenir en Italie</span>
+                <span className="reveal block" style={{ transitionDelay: '160ms' }}>
+                  commence par une <span className="text-[#2DD4BF]">bonne préparation</span>
+                </span>
               </h1>
-              <p className="max-w-2xl text-base font-normal leading-relaxed text-slate-300 sm:text-xl">
-                Préparez vos tests d&rsquo;admission <span className="font-medium text-white">CISIA / TOLC</span>, perfectionnez votre
-                italien académique et entraînez-vous à l&rsquo;entretien consulaire avec une méthode structurée.
+              <p className="reveal max-w-xl text-base leading-relaxed text-slate-300 sm:text-lg" style={{ transitionDelay: '240ms' }}>
+                Depuis Brazzaville, {centre.name} accompagne les étudiants et les apprenants dans leur apprentissage de l&rsquo;italien
+                et dans la construction de leur projet d&rsquo;études en Italie.
               </p>
-              <div className="flex flex-col items-stretch gap-4 pt-2 sm:flex-row sm:items-center">
-                <a href="#test-gratuit" className="group relative inline-flex items-center justify-center gap-3 rounded-2xl bg-[#E2583E] px-8 py-4 text-sm font-bold text-white shadow-[0_10px_30px_rgba(226,88,62,0.3)] transition-all duration-300 hover:-translate-y-1 hover:bg-[#c9452d] hover:shadow-[0_15px_40px_rgba(226,88,62,0.45)]">
-                  <span>Évaluer mon niveau gratuitement</span>
+              <p className="reveal max-w-xl border-l-2 border-[#0E8368]/50 pl-4 text-sm leading-relaxed text-slate-400" style={{ transitionDelay: '300ms' }}>
+                Avec <span className="font-semibold text-white">Salve Italia</span>, notre centre prolonge cet accompagnement dans un
+                espace numérique conçu pour vous aider à évaluer votre niveau, préparer vos tests, vous entraîner à l&rsquo;entretien
+                et suivre votre progression étape par étape.
+              </p>
+              <div className="reveal flex flex-col items-stretch gap-3 pt-1 sm:flex-row sm:items-center" style={{ transitionDelay: '360ms' }}>
+                <a href="#brazzaville" className="group inline-flex items-center justify-center gap-2.5 rounded-2xl bg-[#E2583E] px-7 py-4 text-sm font-bold text-white shadow-[0_10px_30px_rgba(226,88,62,0.3)] transition-all duration-300 hover:-translate-y-1 hover:bg-[#c9452d] hover:shadow-[0_15px_40px_rgba(226,88,62,0.45)]">
+                  <span>Découvrir le centre</span>
                   <Icon name="solar:arrow-right-linear" size={16} className="transition-transform duration-300 group-hover:translate-x-1.5" />
                 </a>
-                <a href="#vision" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/[0.12] bg-white/[0.03] px-7 py-4 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-white/[0.25] hover:bg-white/[0.08]">
+                <a href="#test-gratuit" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/[0.12] bg-white/[0.03] px-6 py-4 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-white/[0.25] hover:bg-white/[0.08]">
                   <Icon name="solar:play-circle-bold" size={16} className="text-[#0E8368]" />
-                  <span>Découvrir la méthode</span>
+                  <span>Évaluer mon niveau gratuitement</span>
                 </a>
               </div>
-              <div className="flex flex-wrap items-center gap-6 pt-2 text-xs font-medium text-slate-400">
-                <span className="flex items-center gap-2"><Icon name="solar:check-circle-bold" size={16} className="text-[#0E8368]" />Test indicatif sans création de compte</span>
-                <span className="flex items-center gap-2"><Icon name="solar:check-circle-bold" size={16} className="text-[#0E8368]" />Optimisé smartphone Android &amp; iOS</span>
-                <span className="flex items-center gap-2"><Icon name="solar:check-circle-bold" size={16} className="text-[#0E8368]" />Centre physique à Brazzaville</span>
+              <div className="reveal flex flex-wrap items-center gap-x-3 gap-y-2 pt-1 text-xs font-medium text-slate-400" style={{ transitionDelay: '420ms' }}>
+                <span className="flex items-center gap-2"><Icon name="solar:check-circle-bold" size={16} className="text-[#0E8368]" />Accompagnement depuis Brazzaville</span>
+                <span className="text-slate-700">·</span>
+                <span className="flex items-center gap-2"><Icon name="solar:check-circle-bold" size={16} className="text-[#0E8368]" />Parcours structuré</span>
+                <span className="text-slate-700">·</span>
+                <span className="flex items-center gap-2"><Icon name="solar:check-circle-bold" size={16} className="text-[#0E8368]" />Suivi humain</span>
               </div>
             </div>
 
-            {/* Composition : photo + agent IA */}
-            <div className="reveal mt-14 grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
-              <div className="group relative min-h-72 overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0D131F]">
-                <img src={heroStudent} alt="Étudiante congolaise préparant ses études en Italie" className="h-full w-full object-cover grayscale-[20%] transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#070A0F] via-transparent to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/70 px-3.5 py-1.5 text-[11px] font-medium text-white backdrop-blur-md">
-                    <Icon name="twemoji:flag-congo-brazzaville" size={14} />
-                    <span>Étudiante accompagnée à Brazzaville</span>
+            {/* Colonne composition : photo du centre + cartes */}
+            <div className="lg:col-span-6">
+              <div className="space-y-4">
+                {/* Photo principale (stable) */}
+                <div className="reveal relative min-h-[22rem] overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0D131F] shadow-2xl sm:min-h-[24rem]" style={{ transitionDelay: '480ms' }}>
+                  <img src={centreBrazza} alt="Enseignants et étudiants du centre de langue à Brazzaville" className="h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#070A0F] via-[#070A0F]/20 to-transparent" />
+                  {/* Carte flottante : Depuis Brazzaville */}
+                  <div className="float-slow absolute bottom-4 left-4 max-w-[15rem] rounded-2xl border border-white/10 bg-black/70 p-3 backdrop-blur-md">
+                    <div className="flex items-center gap-2">
+                      <Icon name="twemoji:flag-congo-brazzaville" size={16} />
+                      <p className="text-xs font-bold text-white">Depuis Brazzaville</p>
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-slate-300">Accompagnement de proximité</p>
+                  </div>
+                  {/* Carte flottante : Progression étudiant */}
+                  <div className="float-slower absolute right-4 top-4 rounded-2xl border border-[#0E8368]/30 bg-[#0D131F]/90 p-3 backdrop-blur-md">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Progression étudiant</p>
+                    <p className="font-heading text-2xl font-extrabold text-[#2DD4BF]">68 %</p>
+                    <div className="mt-1 h-1.5 w-24 overflow-hidden rounded-full bg-slate-800">
+                      <div className="h-full rounded-full bg-gradient-to-r from-[#0E8368] to-[#2DD4BF]" style={{ width: '68%' }} />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex flex-col justify-center gap-4 rounded-3xl border border-white/[0.08] bg-[#0D131F]/90 p-6 backdrop-blur-md sm:p-8">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-2 font-bold text-white">
-                    <Icon name="solar:magic-stick-3-bold" size={16} className="text-[#2DD4BF]" />Agent Ambassade IA
-                  </span>
-                  <span className="rounded-full border border-[#0E8368]/30 bg-[#0E8368]/15 px-2 py-0.5 text-[10px] font-bold text-[#2DD4BF]">Simulation Vocale</span>
+                {/* Cartes secondaires */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="reveal rounded-2xl border border-white/[0.08] bg-[#0D131F] p-4" style={{ transitionDelay: '560ms' }}>
+                    <div className="flex items-center gap-2">
+                      <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-tr from-[#0E8368] to-[#2DD4BF] font-heading text-[10px] font-extrabold text-white">SI</div>
+                      <p className="text-xs font-bold text-white">Salve Italia</p>
+                    </div>
+                    <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">Votre espace de préparation, prolongé par le centre.</p>
+                  </div>
+                  <div className="reveal rounded-2xl border border-white/[0.08] bg-[#0D131F] p-4" style={{ transitionDelay: '640ms' }}>
+                    <div className="flex items-center gap-2">
+                      <Icon name="solar:magic-stick-3-bold" size={16} className="text-[#2DD4BF]" />
+                      <p className="text-xs font-bold text-white">Agent Ambassade IA</p>
+                    </div>
+                    <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">Entraînement à l&rsquo;entretien, vocal ou texte — une innovation du centre.</p>
+                  </div>
                 </div>
-                <p className="rounded-xl border border-white/[0.04] bg-white/[0.02] p-4 text-sm italic leading-relaxed text-slate-300">
-                  « Qual è la tua motivazione principale per studiare in Italia ? »
-                </p>
-                <a href="#test-gratuit" className="inline-flex w-fit items-center gap-2 text-xs font-semibold text-[#2DD4BF] transition-colors hover:text-white">
-                  <Icon name="solar:play-bold" size={14} />
-                  <span>Démarrer une simulation</span>
-                </a>
               </div>
             </div>
           </div>
@@ -158,15 +213,17 @@ export function LandingPage() {
           <div className="flex w-max animate-[marquee_30s_linear_infinite] items-center gap-12 whitespace-nowrap text-xs font-bold uppercase tracking-widest text-slate-400">
             {[0, 1].map((dup) => (
               <div key={dup} className="flex items-center gap-12" aria-hidden={dup === 1}>
-                <span className="flex items-center gap-3 text-white"><Icon name="twemoji:flag-congo-brazzaville" size={16} /><span className="size-1.5 rounded-full bg-[#0E8368]" />Préparation CISIA &amp; TOLC</span>
+                <span className="flex items-center gap-3 text-white"><Icon name="twemoji:flag-italy" size={16} /><span className="size-1.5 rounded-full bg-[#0E8368]" />Formation en italien</span>
                 <span className="text-slate-700">/</span>
-                <span className="flex items-center gap-3"><span className="size-1.5 rounded-full bg-[#0E8368]" />Centre partenaire à Brazzaville</span>
+                <span className="flex items-center gap-3"><span className="size-1.5 rounded-full bg-[#0E8368]" />Accompagnement à Brazzaville</span>
                 <span className="text-slate-700">/</span>
-                <span className="flex items-center gap-3 text-white"><Icon name="twemoji:flag-italy" size={16} /><span className="size-1.5 rounded-full bg-[#0E8368]" />Entraînement Entretien Consulaire IA</span>
+                <span className="flex items-center gap-3 text-white"><span className="size-1.5 rounded-full bg-[#0E8368]" />Préparation aux tests</span>
                 <span className="text-slate-700">/</span>
-                <span className="flex items-center gap-3"><span className="size-1.5 rounded-full bg-[#0E8368]" />Italien Académique A1 à B2</span>
+                <span className="flex items-center gap-3"><span className="size-1.5 rounded-full bg-[#0E8368]" />Suivi personnalisé</span>
                 <span className="text-slate-700">/</span>
-                <span className="flex items-center gap-3 text-white"><Icon name="twemoji:flag-congo-brazzaville" size={16} /><span className="size-1.5 rounded-full bg-[#0E8368]" />Checklist Documentaire Étape par Étape</span>
+                <span className="flex items-center gap-3 text-white"><span className="size-1.5 rounded-full bg-[#0E8368]" />Entraînement à l&rsquo;entretien</span>
+                <span className="text-slate-700">/</span>
+                <span className="flex items-center gap-3"><span className="size-1.5 rounded-full bg-[#0E8368]" />Parcours étudiant structuré</span>
                 <span className="text-slate-700">/</span>
               </div>
             ))}
@@ -175,27 +232,27 @@ export function LandingPage() {
 
         {/* Vision */}
         <section id="vision" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="reveal grid grid-cols-1 items-start gap-10 border-l border-[#0E8368]/40 pl-6 sm:pl-12 lg:grid-cols-12">
-            <div className="space-y-6 lg:col-span-8">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#2DD4BF]">
-                <Icon name="twemoji:flag-congo-brazzaville" size={14} />
-                <span>Passerelle Congo - Italie</span>
-                <Icon name="twemoji:flag-italy" size={14} />
-              </div>
-              <h2 className="font-heading text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-                Partir étudier en Italie demande plus qu&rsquo;un dossier. <span className="font-light text-slate-400">Il faut un projet préparé avec méthode.</span>
+          <div className="space-y-10 border-l border-[#0E8368]/40 pl-6 sm:pl-12">
+            <div className="reveal max-w-3xl space-y-4">
+              <span className="text-xs font-bold uppercase tracking-widest text-[#2DD4BF]">Notre approche</span>
+              <h2 className="font-heading text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
+                Partir étudier en Italie est un projet. <span className="font-light text-slate-400">Nous vous aidons à le préparer avec méthode.</span>
               </h2>
-              <p className="max-w-2xl pt-2 text-base font-normal leading-relaxed text-slate-300 sm:text-xl">
-                Salve Italia transforme une démarche complexe en un parcours clair et mesurable, combinant entraînement numérique de pointe et encadrement humain à Brazzaville.
-              </p>
             </div>
-            <div className="space-y-4 rounded-3xl border border-white/[0.08] bg-[#0D131F] p-6 shadow-sm sm:p-8 lg:col-span-4">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#2DD4BF]">
-                <Icon name="solar:shield-check-bold" size={16} />Rigueur Pédagogique
-              </div>
-              <p className="text-xs leading-relaxed text-slate-300">
-                Pas de fausses promesses. Nous entraînons rigoureusement les candidats aux tests réels du CISIA, à la langue italienne et à la clarté du discours devant les autorités consulaires.
-              </p>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+              {[
+                { icon: 'solar:user-speak-bold', title: 'Proximité', text: 'Un centre présent à Brazzaville, avec des enseignants qui connaissent votre réalité et vous accompagnent en personne.' },
+                { icon: 'solar:shield-check-bold', title: 'Rigueur', text: 'Une préparation exigeante et honnête : langue italienne, tests d’admission et clarté du discours, sans fausses promesses.' },
+                { icon: 'solar:chart-square-bold', title: 'Progression', text: 'Un parcours structuré et mesurable, où chaque étape est suivie pour avancer sereinement vers votre objectif.' },
+              ].map((value, i) => (
+                <div key={value.title} style={{ transitionDelay: `${i * 90}ms` }} className="reveal space-y-3 rounded-3xl border border-white/[0.08] bg-[#0D131F] p-6">
+                  <div className="flex size-11 items-center justify-center rounded-2xl border border-[#0E8368]/30 bg-[#0E8368]/15 text-[#2DD4BF]">
+                    <Icon name={value.icon} size={22} />
+                  </div>
+                  <h3 className="font-heading text-lg font-bold text-white">{value.title}</h3>
+                  <p className="text-xs leading-relaxed text-slate-400">{value.text}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -244,17 +301,17 @@ export function LandingPage() {
 
         {/* Solutions */}
         <section id="solutions" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="reveal mb-12 flex flex-col justify-between gap-6 md:flex-row md:items-end">
-            <div className="space-y-3">
-              <span className="text-xs font-bold uppercase tracking-widest text-[#2DD4BF]">L&rsquo;Écosystème Salve Italia</span>
-              <h2 className="font-heading text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Un accompagnement numérique pour chaque étape</h2>
-            </div>
-            <p className="max-w-xs text-xs leading-relaxed text-slate-400">Quatre modules interconnectés conçus pour former des candidats crédibles et sereins.</p>
+          <div className="reveal mb-12 max-w-3xl space-y-3">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2DD4BF]">L&rsquo;espace numérique du centre</span>
+            <h2 className="font-heading text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Un accompagnement prolongé, en ligne</h2>
+            <p className="text-sm leading-relaxed text-slate-400">
+              Pour prolonger l&rsquo;accompagnement du centre, Salve Italia rassemble dans un espace unique les outils dont vous avez besoin pour vous préparer.
+            </p>
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
             {[
-              { span: 'md:col-span-7', grad: 'bg-[#0D131F]', img: imgExam, tag: 'TOLC-I · TOLC-E · TOLC-F · TOLC-MED', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:target-bold', title: 'Tests d’admission', text: 'Simulations chronométrées, exercices par compétence et corrections détaillées pour assimiler la logique des jurys italiens.', foot: 'Banque de plus de 1 200 questions types', wide: true },
-              { span: 'md:col-span-5', grad: 'bg-gradient-to-br from-[#0D131F] to-[#070A0F]', img: imgAi, tag: 'Vocal & Écrit', tagCls: 'bg-[#0E8368]/20 border-[#0E8368]/40', icon: 'solar:magic-stick-3-bold', title: 'Entretien IA', text: 'Entraînez-vous à répondre à des questions réalistes avec retour pédagogique instantané sur la cohérence de vos propos.', foot: 'Entraînement illimité 24/7', wide: false },
+              { span: 'md:col-span-7', grad: 'bg-[#0D131F]', img: imgExam, tag: 'TOLC-I · TOLC-E · TOLC-F · TOLC-MED', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:target-bold', title: 'Préparation aux tests', text: 'Simulations chronométrées, exercices par compétence et corrections détaillées pour assimiler la logique des tests d’admission.', foot: 'Banque de questions types', wide: true },
+              { span: 'md:col-span-5', grad: 'bg-gradient-to-br from-[#0D131F] to-[#070A0F]', img: imgAi, tag: 'Vocal & Écrit', tagCls: 'bg-[#0E8368]/20 border-[#0E8368]/40', icon: 'solar:magic-stick-3-bold', title: 'Entretien consulaire IA', text: 'Entraînez-vous à répondre à des questions réalistes avec retour pédagogique instantané sur la cohérence de vos propos.', foot: 'Entraînement à l’oral ou à l’écrit', wide: false },
               { span: 'md:col-span-5', grad: 'bg-[#0D131F]', img: imgBooks, tag: 'Niveaux A1 → B2', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:book-bookmark-bold', title: 'Italien académique', text: 'Développez votre compréhension, enrichissez votre vocabulaire universitaire et préparez les certifications CILS / CELI.', foot: 'Exercices interactifs & phonétique', wide: false },
               { span: 'md:col-span-7', grad: 'bg-[#0D131F]', img: imgPlanning, tag: 'Checklist & Échéances', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:checklist-minimalistic-bold', title: 'Suivi du projet', text: 'Visualisez vos progrès, archivez vos documents préparés et suivez les échéances en direct avec vos parents et nos conseillers.', foot: 'Visibilité partagée avec le centre de Brazzaville', wide: true },
             ].map((mod, i) => (
@@ -429,41 +486,62 @@ export function LandingPage() {
 
         {/* Brazzaville */}
         <section id="brazzaville" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="reveal grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
-            <div className="lg:col-span-6">
-              <div className="group relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0D131F] shadow-lg">
-                <img src={centreBrazza} alt="Enseignants et étudiants du centre à Brazzaville" className="h-80 w-full object-cover grayscale-[15%] transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0 sm:h-96" />
-                <div className="flex items-center justify-between border-t border-white/[0.06] bg-[#0D131F] p-4">
-                  <div className="flex items-center gap-2">
-                    <Icon name="twemoji:flag-congo-brazzaville" size={16} />
-                    <div>
-                      <p className="text-xs font-bold text-white">Centre de langue partenaire</p>
-                      <p className="text-[11px] text-slate-400">Brazzaville, République du Congo</p>
-                    </div>
-                  </div>
-                  <span className="rounded-full border border-[#0E8368]/30 bg-[#0E8368]/20 px-3 py-1 text-[10px] font-bold text-[#2DD4BF]">Présentiel &amp; Hybride</span>
+          <div className="reveal mb-10 max-w-3xl space-y-3">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2DD4BF]">Le centre · Brazzaville</span>
+            <h2 className="font-heading text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl">Une expertise locale, tournée vers l&rsquo;international</h2>
+            <p className="text-sm leading-relaxed text-slate-400 sm:text-base">
+              {centre.about ??
+                'Une équipe d’enseignants basée à Brazzaville accompagne chaque apprenant dans son apprentissage de l’italien et la préparation de son projet d’études en Italie — en présentiel et en ligne.'}
+            </p>
+          </div>
+          <div className="reveal grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
+            <div className="lg:col-span-7">
+              <div className="group relative h-full min-h-[20rem] overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0D131F] shadow-lg">
+                <img src={centreBrazza} alt="Le centre de langue à Brazzaville : enseignants et étudiants" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#070A0F] via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-full border border-white/10 bg-black/70 px-3.5 py-1.5 text-[11px] font-medium text-white backdrop-blur-md">
+                  <Icon name="twemoji:flag-congo-brazzaville" size={14} />
+                  <span>Centre de langue · Présentiel &amp; en ligne</span>
                 </div>
               </div>
             </div>
-            <div className="space-y-6 lg:col-span-6">
-              <span className="text-xs font-bold uppercase tracking-widest text-[#2DD4BF]">Présence Locale</span>
-              <h2 className="font-heading text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl">La technologie ne remplace pas l&rsquo;accompagnement. Elle le renforce.</h2>
-              <p className="text-sm leading-relaxed text-slate-300 sm:text-base">Les enseignants du centre de Brazzaville peuvent suivre vos résultats, proposer des recommandations et vous aider à progresser pas à pas.</p>
-              <div className="space-y-4 pt-2">
-                {[
-                  { title: 'Conseils adaptés à votre situation', text: 'Orientation selon votre filière : ingénierie à Turin, économie à Bologne ou architecture à Florence.' },
-                  { title: 'Suivi par des enseignants certifiés', text: 'Ateliers réguliers de pratique orale et corrections personnalisées de vos écrits.' },
-                  { title: 'Clarté et sérénité pour les familles', text: "Des points d'étape réguliers pour rassurer l'étudiant ainsi que ses parents." },
-                ].map((item) => (
-                  <div key={item.title} className="flex items-start gap-3.5">
-                    <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[#0E8368]/20 text-xs font-bold text-[#2DD4BF]">✓</span>
-                    <div>
-                      <h3 className="text-xs font-bold text-white">{item.title}</h3>
-                      <p className="mt-0.5 text-[11px] text-slate-400">{item.text}</p>
-                    </div>
+            <div className="space-y-3 rounded-3xl border border-white/[0.08] bg-[#0D131F] p-6 sm:p-7 lg:col-span-5">
+              <h3 className="font-heading text-lg font-bold text-white">Nous contacter</h3>
+              <dl className="space-y-3 text-sm">
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 text-base" aria-hidden>📍</span>
+                  <div><dt className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Adresse</dt><dd className="text-slate-200">{centre.address}</dd></div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 text-base" aria-hidden>📞</span>
+                  <div>
+                    <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Téléphone</dt>
+                    <dd><a href={`tel:${(centre.phone ?? '+242060000000').replace(/[^\d+]/g, '')}`} className="text-slate-200 hover:text-white">{centre.phone ?? '+242 06 000 00 00'}</a></dd>
                   </div>
-                ))}
-              </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Icon name="solar:chat-round-line-bold" size={18} className="mt-0.5 text-emerald-400" />
+                  <div>
+                    <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-500">WhatsApp</dt>
+                    <dd><a href={waHref} target="_blank" rel="noopener noreferrer" className="text-slate-200 hover:text-white">{centre.whatsapp ?? 'Écrire au centre'}</a></dd>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 text-base" aria-hidden>✉️</span>
+                  <div>
+                    <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Email</dt>
+                    <dd><a href={`mailto:${centre.email ?? 'contact@salveitalia.cg'}`} className="text-slate-200 hover:text-white">{centre.email ?? 'contact@salveitalia.cg'}</a></dd>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Icon name="solar:clock-circle-bold" size={18} className="mt-0.5 text-[#2DD4BF]" />
+                  <div><dt className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Horaires</dt><dd className="whitespace-pre-line text-slate-200">{centre.hours ?? 'Lundi – Samedi · 8h – 18h'}</dd></div>
+                </div>
+              </dl>
+              <a href={waHref} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0E8368] px-5 py-3 text-xs font-bold text-white transition-colors hover:bg-[#0c7059]">
+                <Icon name="solar:chat-round-line-bold" size={16} />
+                <span>Contacter le centre sur WhatsApp</span>
+              </a>
             </div>
           </div>
         </section>
@@ -500,19 +578,20 @@ export function LandingPage() {
             <div className="relative z-10 mx-auto max-w-2xl space-y-6">
               <div className="inline-flex items-center gap-2 rounded-full border border-[#0E8368]/30 bg-[#0E8368]/20 px-4 py-1 text-xs font-bold text-[#2DD4BF]">
                 <Icon name="twemoji:flag-congo-brazzaville" size={14} />
-                <span>Sessions 2025/2026 Ouvertes</span>
-                <Icon name="twemoji:flag-italy" size={14} />
+                <span>Une équipe à vos côtés</span>
               </div>
-              <h2 className="font-heading text-3xl font-extrabold leading-tight tracking-tight sm:text-5xl">Votre projet d&rsquo;Italie mérite une préparation claire.</h2>
-              <p className="mx-auto max-w-xl text-sm leading-relaxed text-slate-300 sm:text-base">Commencez par évaluer votre niveau et avancez avec une méthode adaptée à votre objectif.</p>
+              <h2 className="font-heading text-3xl font-extrabold leading-tight tracking-tight sm:text-5xl">Commencez votre projet avec une équipe qui vous accompagne depuis Brazzaville</h2>
+              <p className="mx-auto max-w-xl text-sm leading-relaxed text-slate-300 sm:text-base">
+                Évaluez votre niveau, découvrez les prochaines étapes et échangez avec notre centre pour mieux préparer votre parcours vers l&rsquo;Italie.
+              </p>
               <div className="flex flex-col items-center justify-center gap-4 pt-3 sm:flex-row">
                 <a href="#test-gratuit" className="inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-[#E2583E] px-8 py-4 text-xs font-bold text-white shadow-xl transition-all duration-300 hover:bg-[#c9452d] sm:w-auto sm:text-sm">
-                  <span>Évaluer mon niveau</span>
+                  <span>Évaluer mon niveau gratuitement</span>
                   <Icon name="solar:arrow-right-linear" size={16} />
                 </a>
-                <a href="https://wa.me/242000000000" target="_blank" rel="noopener noreferrer" className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.12] bg-white/[0.03] px-7 py-4 text-xs font-semibold text-white transition-all duration-300 hover:bg-white/[0.08] sm:w-auto sm:text-sm">
+                <a href={waHref} target="_blank" rel="noopener noreferrer" className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.12] bg-white/[0.03] px-7 py-4 text-xs font-semibold text-white transition-all duration-300 hover:bg-white/[0.08] sm:w-auto sm:text-sm">
                   <Icon name="solar:chat-round-line-bold" size={16} className="text-emerald-400" />
-                  <span>Contacter sur WhatsApp</span>
+                  <span>Contacter le centre sur WhatsApp</span>
                 </a>
               </div>
             </div>

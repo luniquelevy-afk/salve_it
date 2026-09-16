@@ -155,6 +155,30 @@
     transition: none;
   }
 }
+/* Flottement lent des petites cartes du hero (amplitude ≤ 8px). Appliqué sur un
+   wrapper interne pour ne pas entrer en conflit avec la transition « reveal ». */
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+.landing .float-slow {
+  animation: floaty 6s ease-in-out infinite;
+}
+.landing .float-slower {
+  animation: floaty 7.5s ease-in-out infinite;
+  animation-delay: -2.5s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing .float-slow,
+  .landing .float-slower {
+    animation: none;
+  }
+}
 
 /* Boutons — base commune. */
 @utility btn {
