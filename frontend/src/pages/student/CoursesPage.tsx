@@ -1,18 +1,55 @@
+import { Link } from 'react-router-dom';
 import { Icon } from '../public/landing-icon';
+import avatar from '../../assets/landing/cours-avatar.png';
 
-// Reproduction fidèle du design fourni (dashboard-cours.html), rendue dans la coquille
-// interne (sidebar). Contenu de démonstration repris tel quel du maquettage.
+// Reproduction fidèle du design fourni (dashboard-cours.html) : page autonome plein
+// écran sombre, avec son propre en-tête et sa barre de navigation mobile. Contenu de
+// démonstration repris tel quel du maquettage.
 export function CoursesPage() {
   return (
-    <div className="cours relative overflow-hidden rounded-3xl border border-white/[0.08] bg-[#070A0F] p-5 text-[#F1F5F9] sm:p-8">
-      {/* Décor */}
-      <div aria-hidden className="pointer-events-none absolute inset-0">
+    <div className="cours relative min-h-screen overflow-x-hidden bg-[#070A0F] pb-24 font-sans text-[#F1F5F9] antialiased selection:bg-[#0E8368]/30 selection:text-white">
+      {/* Décor plein écran */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
         <div className="absolute -top-[10%] right-[10%] h-[500px] w-[700px] rounded-full bg-gradient-to-b from-[#0E8368]/20 via-[#0E8368]/5 to-transparent blur-[140px]" />
         <div className="absolute -bottom-[10%] -left-[10%] h-[600px] w-[600px] rounded-full bg-gradient-to-tr from-[#2DD4BF]/10 to-transparent blur-[160px]" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
       </div>
 
-      <div className="relative z-10 space-y-10">
+      {/* En-tête */}
+      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#070A0F]/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-4">
+            <Link to="/etudiant" className="flex items-center gap-2.5">
+              <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#0E8368] to-[#2DD4BF] font-heading text-xs font-extrabold text-white shadow-sm">SI</div>
+              <span className="hidden font-heading text-sm font-bold text-white sm:inline">Salve Italia</span>
+            </Link>
+            <span className="hidden text-slate-700 sm:inline">/</span>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
+              <span className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.05] px-2.5 py-1 text-[#2DD4BF]">
+                <Icon name="solar:book-bookmark-bold" size={14} />Espace Cours &amp; Modules
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="hidden items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 text-xs text-slate-300 md:flex">
+              <Icon name="twemoji:flag-congo-brazzaville" size={14} />
+              <span className="text-[11px] text-slate-400">Brazzaville</span>
+              <Icon name="solar:arrow-right-linear" size={12} className="text-[#2DD4BF]" />
+              <Icon name="twemoji:flag-italy" size={14} />
+              <span className="text-[11px] text-slate-400">Bologne (TOLC-E)</span>
+            </div>
+            <div className="flex items-center gap-2.5 rounded-full border border-white/[0.08] bg-[#0D131F] py-1 pl-2 pr-3">
+              <img src={avatar} alt="Avatar" className="size-7 rounded-full border border-[#0E8368]/40 object-cover" />
+              <div className="hidden text-left sm:block">
+                <p className="text-xs font-bold leading-tight text-white">Grâce M.</p>
+                <p className="text-[9px] font-medium text-[#2DD4BF]">Italien B1 · 68%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="relative z-10 mx-auto max-w-7xl space-y-10 px-4 pt-8 sm:px-6 lg:px-8">
         {/* Hero : module en cours + assiduité */}
         <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
           <div className="relative flex flex-col justify-between space-y-6 overflow-hidden rounded-3xl border border-white/[0.1] bg-gradient-to-br from-[#0D131F] via-[#0D131F] to-[#070A0F] p-6 shadow-2xl sm:p-8 lg:col-span-8">
@@ -65,11 +102,11 @@ export function CoursesPage() {
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Activité hebdomadaire</span>
               <div className="grid grid-cols-7 gap-1.5 text-center">
                 {[
-                  { h: 'h-14', c: 'bg-[#0E8368]', d: 'L', dim: false },
-                  { h: 'h-10', c: 'bg-[#0E8368]', d: 'M', dim: false },
+                  { h: 'h-14', c: 'bg-[#0E8368]', d: 'L' },
+                  { h: 'h-10', c: 'bg-[#0E8368]', d: 'M' },
                   { h: 'h-16', c: 'bg-[#2DD4BF] shadow-[0_0_10px_rgba(45,212,191,0.3)]', d: 'M', hi: true },
-                  { h: 'h-12', c: 'bg-[#0E8368]', d: 'J', dim: false },
-                  { h: 'h-8', c: 'bg-[#0E8368]/60', d: 'V', dim: false },
+                  { h: 'h-12', c: 'bg-[#0E8368]', d: 'J' },
+                  { h: 'h-8', c: 'bg-[#0E8368]/60', d: 'V' },
                   { h: 'h-6', c: 'bg-slate-800', d: 'S', dim: true },
                   { h: 'h-4', c: 'bg-slate-800', d: 'D', dim: true },
                 ].map((bar, i) => (
@@ -118,7 +155,6 @@ export function CoursesPage() {
             <span className="cursor-pointer text-xs font-semibold text-[#2DD4BF] hover:underline">Voir les archives →</span>
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {/* Carte 1 */}
             <div className="group flex flex-col justify-between space-y-5 rounded-3xl border border-white/[0.08] bg-[#0D131F] p-6 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:border-[#0E8368] hover:shadow-[0_20px_40px_rgba(14,131,104,0.2)]">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -138,7 +174,6 @@ export function CoursesPage() {
                 <span className="flex items-center gap-1 font-bold text-[#2DD4BF] transition-transform group-hover:translate-x-1">Continuer <Icon name="solar:arrow-right-linear" size={14} /></span>
               </div>
             </div>
-            {/* Carte 2 */}
             <div className="group flex flex-col justify-between space-y-5 rounded-3xl border border-white/[0.08] bg-[#0D131F] p-6 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:border-[#0E8368] hover:shadow-[0_20px_40px_rgba(14,131,104,0.2)]">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -158,7 +193,6 @@ export function CoursesPage() {
                 <span className="flex items-center gap-1 font-bold text-[#2DD4BF] transition-transform group-hover:translate-x-1">Pratiquer <Icon name="solar:arrow-right-linear" size={14} /></span>
               </div>
             </div>
-            {/* Carte 3 */}
             <div className="group flex flex-col justify-between space-y-5 rounded-3xl border border-white/[0.08] bg-[#0D131F] p-6 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:border-[#E2583E] hover:shadow-[0_20px_40px_rgba(226,88,62,0.2)]">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -194,11 +228,11 @@ export function CoursesPage() {
           </div>
           <div className="space-y-3">
             {[
-              { n: '1', title: "Chapitre 1 : Le lexique du campus et de l'administration italienne", sub: 'Vocabulaire · Matricola, Appello, CFU, Piano di studi · 45 min', pct: 'Validé · 100%' },
-              { n: '2', title: "Chapitre 2 : Argumenter son choix d'université à l'oral", sub: 'Expression Orale · Simulation de réponse consulaire · 50 min', pct: 'Validé · 95%' },
-              { n: '3', title: 'Chapitre 3 : Maîtrise des connecteurs logiques formels', sub: 'Grammaire · Tuttavia, pertanto, affinché, benché · 40 min', pct: 'Validé · 88%' },
+              { title: "Chapitre 1 : Le lexique du campus et de l'administration italienne", sub: 'Vocabulaire · Matricola, Appello, CFU, Piano di studi · 45 min', pct: 'Validé · 100%' },
+              { title: "Chapitre 2 : Argumenter son choix d'université à l'oral", sub: 'Expression Orale · Simulation de réponse consulaire · 50 min', pct: 'Validé · 95%' },
+              { title: 'Chapitre 3 : Maîtrise des connecteurs logiques formels', sub: 'Grammaire · Tuttavia, pertanto, affinché, benché · 40 min', pct: 'Validé · 88%' },
             ].map((ch) => (
-              <div key={ch.n} className="flex flex-col justify-between gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.01] p-4 transition-colors hover:bg-white/[0.03] sm:flex-row sm:items-center">
+              <div key={ch.title} className="flex flex-col justify-between gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.01] p-4 transition-colors hover:bg-white/[0.03] sm:flex-row sm:items-center">
                 <div className="flex items-center gap-3">
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[#0E8368]/40 bg-[#0E8368]/20 text-xs font-bold text-[#2DD4BF]">✓</div>
                   <div>
@@ -212,7 +246,6 @@ export function CoursesPage() {
                 </div>
               </div>
             ))}
-            {/* Chapitre 4 — en cours */}
             <div className="flex flex-col justify-between gap-3 rounded-2xl border border-[#0E8368]/50 bg-[#0E8368]/10 p-4 shadow-[0_0_20px_rgba(14,131,104,0.15)] sm:flex-row sm:items-center">
               <div className="flex items-center gap-3">
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#0E8368] text-xs font-bold text-white shadow">4</div>
@@ -228,7 +261,6 @@ export function CoursesPage() {
                 <Icon name="solar:play-bold" size={14} /><span>Continuer</span>
               </button>
             </div>
-            {/* Chapitre 5 — verrouillé */}
             <div className="flex flex-col justify-between gap-3 rounded-2xl border border-white/[0.04] bg-white/[0.01] p-4 opacity-60 sm:flex-row sm:items-center">
               <div className="flex items-center gap-3">
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/[0.05] text-slate-500">
@@ -270,7 +302,23 @@ export function CoursesPage() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
+
+      {/* Barre de navigation mobile */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-white/[0.08] bg-[#070A0F]/90 px-6 py-3 backdrop-blur-xl sm:hidden">
+        <Link to="/etudiant/cours" className="flex flex-col items-center gap-1 text-[#2DD4BF]">
+          <Icon name="solar:book-bookmark-bold" size={20} /><span className="text-[10px] font-bold">Mes Cours</span>
+        </Link>
+        <Link to="/etudiant/simulations" className="flex flex-col items-center gap-1 text-slate-400 hover:text-white">
+          <Icon name="solar:target-bold" size={20} /><span className="text-[10px]">TOLC CISIA</span>
+        </Link>
+        <Link to="/etudiant/entretien" className="flex flex-col items-center gap-1 text-slate-400 hover:text-white">
+          <Icon name="solar:magic-stick-3-bold" size={20} /><span className="text-[10px]">Agent IA</span>
+        </Link>
+        <Link to="/etudiant/profil" className="flex flex-col items-center gap-1 text-slate-400 hover:text-white">
+          <Icon name="solar:user-circle-bold" size={20} /><span className="text-[10px]">Profil</span>
+        </Link>
+      </nav>
     </div>
   );
 }
