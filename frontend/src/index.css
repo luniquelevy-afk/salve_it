@@ -201,6 +201,12 @@
 [data-theme='dark'] {
   color-scheme: dark;
 }
+/* Titres : la règle de base les met en bleu nuit (invisible sur fond sombre). */
+[data-theme='dark'] h1,
+[data-theme='dark'] h2,
+[data-theme='dark'] h3 {
+  color: #f1f5f9;
+}
 /* Surfaces */
 [data-theme='dark'] .bg-white {
   background-color: #0d131f !important;
