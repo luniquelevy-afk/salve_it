@@ -7,6 +7,7 @@ import type { PublicSite, SiteSettings } from '../../lib/types';
 import { Icon } from './landing-icon';
 import italyPanorama from '../../assets/landing/images/italy-panorama.jpg';
 import etudianteItalie from '../../assets/landing/images/etudiante-italie.png';
+import logoMark from '../../assets/landing/logo.png';
 import cardEval from '../../assets/landing/cards/c1-evaluation.jpg';
 import cardTests from '../../assets/landing/cards/c2-tests.jpg';
 import cardEntretien from '../../assets/landing/cards/c3-entretien.jpg';
@@ -101,8 +102,8 @@ export function LandingPage() {
       <header className="sticky top-4 z-50 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-2 rounded-full border border-white/[0.08] bg-[#0D131F]/85 px-3 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all duration-500 hover:border-white/[0.18] sm:gap-3 sm:px-5 sm:py-3">
           <a href="#hero" className="group flex items-center gap-2 sm:gap-3">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[#0E8368] to-[#2DD4BF] font-heading text-sm font-extrabold text-white shadow-[0_4px_16px_rgba(14,131,104,0.35)] transition-transform duration-500 group-hover:rotate-6 sm:size-11 sm:rounded-2xl sm:text-base">
-              SI
+            <div className="flex size-9 items-center justify-center overflow-hidden rounded-xl bg-white p-1 shadow-[0_4px_16px_rgba(0,0,0,0.35)] transition-transform duration-500 group-hover:rotate-6 sm:size-11 sm:rounded-2xl">
+              <img src={logoMark} alt="Salve Italia" className="size-full object-contain" />
             </div>
             <span className="flex flex-col leading-tight">
               <span className="font-heading text-base font-extrabold tracking-tight text-white transition-colors group-hover:text-[#2DD4BF] sm:text-lg">
