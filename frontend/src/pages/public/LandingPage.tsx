@@ -5,7 +5,6 @@ import { api } from '../../lib/api';
 import { whatsappLink } from '../../lib/public-site';
 import type { PublicSite, SiteSettings } from '../../lib/types';
 import { Icon } from './landing-icon';
-import centreBrazza from '../../assets/landing/images/q8S28WUPWgJ.jpeg';
 import italyPanorama from '../../assets/landing/images/italy-panorama.jpg';
 import etudianteItalie from '../../assets/landing/images/etudiante-italie.png';
 import cardEval from '../../assets/landing/cards/c1-evaluation.jpg';
@@ -199,14 +198,6 @@ export function LandingPage() {
                       <p className="text-xs font-bold text-white">Depuis Brazzaville</p>
                     </div>
                     <p className="mt-0.5 text-[11px] text-slate-300">Accompagnement de proximité</p>
-                  </div>
-                  {/* Carte flottante : Progression étudiant */}
-                  <div className="float-slower absolute right-0 top-6 z-20 rounded-2xl border border-[#0E8368]/30 bg-[#0D131F]/90 p-3 backdrop-blur-md">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Progression étudiant</p>
-                    <p className="font-heading text-2xl font-extrabold text-[#2DD4BF]">68 %</p>
-                    <div className="mt-1 h-1.5 w-24 overflow-hidden rounded-full bg-slate-800">
-                      <div className="h-full rounded-full bg-gradient-to-r from-[#0E8368] to-[#2DD4BF]" style={{ width: '68%' }} />
-                    </div>
                   </div>
                 </div>
                 {/* Cartes secondaires */}
@@ -520,7 +511,7 @@ export function LandingPage() {
           <div className="reveal grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
             <div className="lg:col-span-7">
               <div className="group relative h-full min-h-[20rem] overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0D131F] shadow-lg">
-                <img src={centreBrazza} alt="Le centre de langue à Brazzaville : enseignants et étudiants" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                <img src={imgStudy} alt="Étudiants du centre de langue à Brazzaville en apprentissage de l'italien" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#070A0F] via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-full border border-white/10 bg-black/70 px-3.5 py-1.5 text-[11px] font-medium text-white backdrop-blur-md">
                   <Icon name="twemoji:flag-congo-brazzaville" size={14} />
