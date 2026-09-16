@@ -193,3 +193,84 @@
 @utility eyebrow {
   @apply text-xs font-bold uppercase tracking-[0.05em];
 }
+
+/* ── Thème sombre de l'espace interne ──────────────────────────────
+   Activé via [data-theme="dark"] posé sur la coquille (AppShell). Surcharge les
+   surfaces/textes/bordures des pages existantes sans les réécrire une par une.
+   Le site public reste inchangé (hors de cette portée). */
+[data-theme='dark'] {
+  color-scheme: dark;
+}
+/* Surfaces */
+[data-theme='dark'] .bg-white {
+  background-color: #0d131f !important;
+}
+[data-theme='dark'] .bg-panna,
+[data-theme='dark'] .bg-stone-900 {
+  background-color: #070a0f !important;
+}
+[data-theme='dark'] .bg-panna-alt,
+[data-theme='dark'] .bg-stone-50 {
+  background-color: #0d131f !important;
+}
+[data-theme='dark'] .bg-stone-100 {
+  background-color: #131b2b !important;
+}
+/* Textes */
+[data-theme='dark'] .text-stone-900,
+[data-theme='dark'] .text-stone-800,
+[data-theme='dark'] .text-notte {
+  color: #f1f5f9 !important;
+}
+[data-theme='dark'] .text-stone-700,
+[data-theme='dark'] .text-stone-600 {
+  color: #94a3b8 !important;
+}
+[data-theme='dark'] .text-stone-500,
+[data-theme='dark'] .text-stone-400,
+[data-theme='dark'] .text-stone-300 {
+  color: #64748b !important;
+}
+/* Bordures & séparateurs */
+[data-theme='dark'] .border-stone-100,
+[data-theme='dark'] .border-stone-200,
+[data-theme='dark'] .border-stone-300,
+[data-theme='dark'] .border-sand {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme='dark'] .divide-stone-100 > * + *,
+[data-theme='dark'] .divide-stone-200 > * + * {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+/* Survols fréquents */
+[data-theme='dark'] .hover\:bg-stone-50:hover,
+[data-theme='dark'] .hover\:bg-stone-100:hover {
+  background-color: #131b2b !important;
+}
+/* Composants utilitaires */
+[data-theme='dark'] .card {
+  background-color: #0d131f !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9;
+  box-shadow: none;
+}
+[data-theme='dark'] .input {
+  background-color: #0d131f !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #f1f5f9 !important;
+}
+[data-theme='dark'] .btn-secondary {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0 !important;
+}
+[data-theme='dark'] .btn-danger {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+[data-theme='dark'] .label {
+  color: #cbd5e1 !important;
+}
+/* Le vert de marque reste lisible sur fond sombre. */
+[data-theme='dark'] .text-verde-dark {
+  color: #2dd4bf !important;
+}

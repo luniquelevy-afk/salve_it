@@ -63,11 +63,6 @@ export function App() {
           <Route path="/mot-de-passe" element={<ChangePasswordPage />} />
           <Route path="/mfa" element={<MfaPage />} />
 
-          {/* Page Cours : design dédié plein écran (hors coquille claire) */}
-          <Route element={<RequireAuth roles={['student']} />}>
-            <Route path="/etudiant/cours" element={<CoursesPage />} />
-          </Route>
-
           <Route element={<AppShell />}>
             <Route element={<RequireAuth roles={['student']} />}>
               <Route path="/etudiant" element={<StudentDashboard />} />
@@ -76,6 +71,7 @@ export function App() {
               <Route path="/etudiant/simulations/:id/resultats" element={<SimulationResultsPage />} />
               <Route path="/etudiant/entretien" element={<EmbassyPage />} />
               <Route path="/etudiant/entretien/:id" element={<EmbassySessionPage />} />
+              <Route path="/etudiant/cours" element={<CoursesPage />} />
               <Route path="/etudiant/cours/:id" element={<CoursePage />} />
               <Route path="/etudiant/exercices" element={<ExercisesPage />} />
               <Route path="/etudiant/exercices/:id" element={<ExercisePage />} />
