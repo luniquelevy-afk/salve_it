@@ -4,6 +4,8 @@ import { ErrorBanner } from '../../components/ErrorBanner';
 import { api, ApiError } from '../../lib/api';
 import { formatDateTime } from '../../lib/format';
 import { CEFR_LEVELS, COURSE_TYPE_LABELS, type CefrLevel, type ClassSummary, type Course, type CourseContentType } from '../../lib/types';
+import { SectionTabs } from '../../components/SectionTabs';
+import { CONTENT_TABS } from '../../components/section-tabs';
 
 interface Draft {
   id: string | null;
@@ -101,6 +103,7 @@ export function ManageCoursesPage() {
 
   return (
     <div className="space-y-5">
+      <SectionTabs tabs={CONTENT_TABS} label="Cours et exercices" />
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold">Gestion des cours</h1>
         <button className="btn-primary ml-auto" onClick={() => setDraft(draft ? null : EMPTY)}>

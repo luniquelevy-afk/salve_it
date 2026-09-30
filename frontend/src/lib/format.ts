@@ -41,3 +41,16 @@ export function formatPoints(points: number | null): string {
 export function formatPercent(part: number, total: number): string {
   return total > 0 ? `${Math.round((part / total) * 100)} %` : '—';
 }
+
+// « À l’instant », « Il y a 12 minutes », « Hier », « Il y a 3 jours », puis la date.
+export function formatRelative(iso: string, now = Date.now()): string {
+  const minutes = Math.round((now - Date.parse(iso)) / 60_000);
+  if (minutes < 1) return 'À l’instant';
+  if (minutes < 60) return `Il y a ${minutes} minute${minutes > 1 ? 's' : ''}`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `Il y a ${hours} heure${hours > 1 ? 's' : ''}`;
+  const days = Math.round(hours / 24);
+  if (days === 1) return 'Hier';
+  if (days < 7) return `Il y a ${days} jours`;
+  return formatDay(iso);
+}

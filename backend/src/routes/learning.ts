@@ -11,6 +11,7 @@ import { recordAudit } from '../services/audit.js';
 import { getEmbassyProgress, getEmbassySessionForStaff } from '../services/embassy.js';
 import { createScenario, listScenarios, updateScenario } from '../services/embassy-scenarios.js';
 import { getLearningPath, getReadiness, getStudentProfile, saveStudentProfile } from '../services/student-profile.js';
+import { adminHome } from '../services/admin-home.js';
 import { DASHBOARD_PERIODS, type DashboardPeriod } from '../services/dashboard-analytics.js';
 import { createFeedback, getAdminOverview, getStudentFollowUp, getTeacherOverview, updateFeedback } from '../services/teacher-dashboard.js';
 import { getReviewSummary } from '../services/test-engine.js';
@@ -120,6 +121,11 @@ teacherRouter.patch('/feedback/:id', writeLimiter, async (req, res) => {
 export const adminLearningRouter = Router();
 
 adminLearningRouter.use(...adminOnly);
+
+// Accueil : interventions nécessaires, indicateurs essentiels, activité récente, tendance.
+adminLearningRouter.get('/home', async (_req, res) => {
+  res.json(await adminHome());
+});
 
 // Période des analyses : 7, 30 (défaut), 90 ou 365 jours.
 adminLearningRouter.get('/dashboard', async (req, res) => {

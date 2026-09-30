@@ -13,7 +13,9 @@ import { MfaPage } from './pages/auth/MfaPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { LandingPage } from './pages/public/LandingPage';
 import { PublicLayout } from './components/PublicLayout';
-import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
+import { AdminDocumentsPage } from './pages/admin/AdminDocumentsPage';
+import { AdminHomePage } from './pages/admin/AdminHomePage';
+import { AdminStatsPage } from './pages/admin/AdminStatsPage';
 import { ChecklistPage } from './pages/admin/ChecklistPage';
 import { DocumentsPage } from './pages/student/DocumentsPage';
 import { ProfilePage } from './pages/student/ProfilePage';
@@ -43,6 +45,7 @@ import { SimulationResultsPage } from './pages/student/SimulationResultsPage';
 import { SimulationRunPage } from './pages/student/SimulationRunPage';
 import { SimulationsPage } from './pages/student/SimulationsPage';
 import { StudentDashboard } from './pages/student/StudentDashboard';
+import { StudentProgressPage } from './pages/student/StudentProgressPage';
 import { TeacherDashboard } from './pages/teacher/TeacherDashboard';
 
 export function App() {
@@ -68,6 +71,7 @@ export function App() {
           <Route element={<AppShell />}>
             <Route element={<RequireAuth roles={['student']} />}>
               <Route path="/etudiant" element={<StudentDashboard />} />
+              <Route path="/etudiant/progression" element={<StudentProgressPage />} />
               <Route path="/etudiant/simulations" element={<SimulationsPage />} />
               <Route path="/etudiant/simulations/:id" element={<SimulationRunPage />} />
               <Route path="/etudiant/simulations/:id/resultats" element={<SimulationResultsPage />} />
@@ -95,11 +99,13 @@ export function App() {
               <Route path="/enseignant" element={<TeacherDashboard />} />
             </Route>
             <Route element={<RequireAuth roles={['admin']} />}>
-              <Route path="/admin" element={<Navigate to="/admin/comptes" replace />} />
+              <Route path="/admin" element={<Navigate to="/admin/tableau-de-bord" replace />} />
               <Route path="/admin/comptes" element={<AdminUsersPage />} />
               <Route path="/admin/prospects" element={<ProspectsPage />} />
               <Route path="/admin/site" element={<SiteContentPage />} />
-              <Route path="/admin/tableau-de-bord" element={<AdminDashboardPage />} />
+              <Route path="/admin/tableau-de-bord" element={<AdminHomePage />} />
+              <Route path="/admin/statistiques" element={<AdminStatsPage />} />
+              <Route path="/admin/documents" element={<AdminDocumentsPage />} />
               <Route path="/admin/modeles-de-test" element={<TestTemplatesPage />} />
               <Route path="/admin/ia" element={<AdminAiPage />} />
               <Route path="/admin/checklist" element={<ChecklistPage />} />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildUpcoming, summarizeEmbassy, summarizeSimulations } from '../src/services/student-dashboard.js';
+import { buildRecent, buildUpcoming, summarizeEmbassy, summarizeSimulations } from '../src/services/student-dashboard.js';
 
 describe('§16.1 — simulations', () => {
   it('sans simulation : aucun indicateur inventé', () => {
@@ -31,11 +31,11 @@ describe('§16.1 — entretiens', () => {
       { completedAt: '2026-09-10T10:00:00Z', overallScore: 71, coherence: null, inconsistencies: 2 },
       { completedAt: '2026-09-05T10:00:00Z', overallScore: 60, coherence: 61, inconsistencies: 1 },
     ]);
-    expect(summary).toEqual({ count: 3, averageScore: 60, averageCoherence: 51, latestInconsistencies: 2 });
+    expect(summary).toEqual({ count: 3, averageScore: 60, averageCoherence: 51, latestInconsistencies: 2, latestScore: 71 });
   });
 
   it('sans entretien : valeurs nulles', () => {
-    expect(summarizeEmbassy([])).toEqual({ count: 0, averageScore: null, averageCoherence: null, latestInconsistencies: null });
+    expect(summarizeEmbassy([])).toEqual({ count: 0, averageScore: null, averageCoherence: null, latestInconsistencies: null, latestScore: null });
   });
 });
 
@@ -55,5 +55,23 @@ describe('§16.1 — prochaines échéances', () => {
     expect(upcoming.map((item) => item.title)).toEqual(['Passeport : document expiré', 'Italien B1', 'Assurance santé : expiration']);
     expect(upcoming[1]).toMatchObject({ kind: 'class_session', detail: 'Classe B1 · Salle 2', link: '/calendrier' });
     expect(upcoming[0]).toMatchObject({ kind: 'document_expiry', detail: 'À renouveler', link: '/etudiant/documents' });
+  });
+});
+
+describe('buildRecent', () => {
+  it('garde les trois activités les plus récentes, tous types confondus', () => {
+    const recent = buildRecent(
+      [{ completedAt: '2026-09-28T10:00:00.000Z', accuracy: 0.72, templateName: 'TOLC démo' }],
+      [{ completedAt: '2026-09-29T10:00:00.000Z', overallScore: 68 }],
+      [
+        { createdAt: '2026-09-30T09:00:00.000Z', title: 'Salutations', score: 2, maxScore: 2, exerciseId: 'e1' },
+        { createdAt: '2026-09-01T09:00:00.000Z', title: 'Ancien', score: 1, maxScore: 2, exerciseId: 'e2' },
+      ],
+    );
+    expect(recent.map((item) => [item.kind, item.result])).toEqual([
+      ['exercise', '2/2'],
+      ['embassy', '68/100'],
+      ['simulation', '72 %'],
+    ]);
   });
 });

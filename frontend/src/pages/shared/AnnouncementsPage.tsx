@@ -4,12 +4,14 @@ import { ErrorBanner } from '../../components/ErrorBanner';
 import { api, ApiError } from '../../lib/api';
 import { formatDateTime } from '../../lib/format';
 import { ANNOUNCEMENT_TARGET_LABELS, type Announcement, type AnnouncementTarget, type ClassSummary } from '../../lib/types';
+import { useScrollToHash } from '../../hooks/useScrollToHash';
 
 export function AnnouncementsPage() {
   const { me } = useAuth();
   const isAdmin = me?.role === 'admin';
   const isStaff = me?.role === 'teacher' || isAdmin;
   const [announcements, setAnnouncements] = useState<Announcement[] | null>(null);
+  useScrollToHash(announcements !== null);
   const [classes, setClasses] = useState<ClassSummary[]>([]);
   const [form, setForm] = useState<{ title: string; body: string; target: AnnouncementTarget; classId: string }>({
     title: '',
@@ -74,7 +76,7 @@ export function AnnouncementsPage() {
       <ErrorBanner message={error} />
 
       {isStaff && (isAdmin || classes.length > 0) && (
-        <form onSubmit={publish} className="card space-y-4">
+        <form id="publier" onSubmit={publish} className="card scroll-mt-20 space-y-4">
           <h2 className="font-semibold">Nouvelle annonce</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>

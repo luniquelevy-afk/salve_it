@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import { CEFR_LEVELS, COURSE_TYPE_LABELS, type CefrLevel, type Course, type CourseContentType } from '../../lib/types';
 import { Icon } from '../public/landing-icon';
+import { SectionTabs } from '../../components/SectionTabs';
+import { STUDENT_LEARNING_TABS } from '../../components/section-tabs';
 
 type LevelFilter = CefrLevel | 'all' | '';
 
@@ -37,6 +39,7 @@ export function CoursesPage() {
 
   return (
     <div className="cours space-y-8">
+      <SectionTabs tabs={STUDENT_LEARNING_TABS} label="Apprendre" />
       {/* En-tête */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">

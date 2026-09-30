@@ -42,8 +42,9 @@ const ACTIVITY: Series[] = [
 ];
 const ACCENT = 'var(--viz-accent)';
 
-// §16.3 : vue d'ensemble pilotée par période — tendances, répartitions et suivi opérationnel.
-export function AdminDashboardPage() {
+// §16.3 : statistiques détaillées par période — tendances, répartitions et suivi opérationnel.
+// L'accueil (AdminHomePage) ne garde que l'essentiel.
+export function AdminStatsPage() {
   const [days, setDays] = useState<DashboardDays>(30);
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [classes, setClasses] = useState<TeacherOverview | null>(null);
@@ -74,7 +75,7 @@ export function AdminDashboardPage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Vue d’ensemble</h1>
+          <h1 className="text-2xl font-bold">Statistiques</h1>
           <p className="mt-1 text-sm text-[var(--c-muted)]">Activité des étudiants, préparation, prospects et coûts — comparés à la période précédente.</p>
         </div>
         <div role="group" aria-label="Période" className="flex gap-1 rounded-xl border border-[var(--c-border)] bg-[var(--c-elev)] p-1">

@@ -46,7 +46,32 @@ export function summarizeEmbassy(points: EmbassyPoint[]) {
     // « Score moyen de cohérence » (§16.1) : dimension cohérence du projet des rapports d'entretien.
     averageCoherence: average(recentFirst.map((point) => point.coherence).filter((value): value is number => value !== null)),
     latestInconsistencies: recentFirst[0]?.inconsistencies ?? null,
+    latestScore: recentFirst[0]?.overallScore ?? null,
   };
+}
+
+export interface RecentActivity {
+  kind: 'simulation' | 'embassy' | 'exercise';
+  label: string;
+  result: string;
+  at: string;
+  link: string;
+}
+
+// Trois dernières activités, tous types confondus (accueil étudiant).
+export function buildRecent(
+  simulations: { completedAt: string; accuracy: number; templateName: string | null }[],
+  embassy: { completedAt: string; overallScore: number }[],
+  exercises: { createdAt: string; title: string; score: number; maxScore: number; exerciseId: string }[],
+  limit = 3,
+): RecentActivity[] {
+  return [
+    ...simulations.map((point) => ({ kind: 'simulation' as const, label: point.templateName ?? 'Simulation', result: `${Math.round(point.accuracy * 100)} %`, at: point.completedAt, link: '/etudiant/simulations' })),
+    ...embassy.map((point) => ({ kind: 'embassy' as const, label: 'Entretien consulaire', result: `${point.overallScore}/100`, at: point.completedAt, link: '/etudiant/entretien' })),
+    ...exercises.map((attempt) => ({ kind: 'exercise' as const, label: attempt.title, result: `${attempt.score}/${attempt.maxScore}`, at: attempt.createdAt, link: `/etudiant/exercices/${attempt.exerciseId}` })),
+  ]
+    .sort((a, b) => b.at.localeCompare(a.at))
+    .slice(0, limit);
 }
 
 export interface UpcomingItem {
@@ -97,7 +122,7 @@ interface EmbassyRow {
 
 export async function getStudentDashboard(auth: AuthContext, now = new Date()) {
   const studentId = auth.userId;
-  const [simulations, embassy, documents, sessions] = await Promise.all([
+  const [simulations, embassy, documents, sessions, attempts] = await Promise.all([
     db
       .from('simulations')
       .select('completed_at, total_questions, score_by_section, test_templates(name)')
@@ -116,7 +141,16 @@ export async function getStudentDashboard(auth: AuthContext, now = new Date()) {
       .limit(50),
     getStudentDocumentsSpace(studentId),
     listClassSessions(auth, { from: now.toISOString(), to: new Date(now.getTime() + UPCOMING_DAYS * DAY_MS).toISOString() }),
+    db.from('exercise_attempts').select('exercise_id, created_at, score, max_score, exercises(title)').eq('student_id', studentId).order('created_at', { ascending: false }).limit(5),
   ]);
+  if (attempts.error) throw attempts.error;
+  const exercisePoints = (attempts.data as { exercise_id: string; created_at: string; score: number; max_score: number; exercises: { title: string } | null }[]).map((row) => ({
+    exerciseId: row.exercise_id,
+    createdAt: row.created_at,
+    title: row.exercises?.title ?? 'Exercice',
+    score: row.score,
+    maxScore: row.max_score,
+  }));
   if (simulations.error) throw simulations.error;
   if (embassy.error) throw embassy.error;
 
@@ -155,6 +189,8 @@ export async function getStudentDashboard(auth: AuthContext, now = new Date()) {
       expiringSoon: items.filter((item) => item.expiringSoon).length,
     },
     upcoming: buildUpcoming(sessions, expiries),
+    recent: buildRecent(simulationPoints, embassyPoints, exercisePoints),
+    lastExercise: exercisePoints[0] ?? null,
     generatedAt: now.toISOString(),
   };
 }

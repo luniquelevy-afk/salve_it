@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { ErrorBanner } from '../../components/ErrorBanner';
 import { api, ApiError } from '../../lib/api';
 import { CEFR_LEVELS, EXERCISE_TYPE_LABELS, type CefrLevel, type Course, type ExerciseInput, type ExerciseType, type ManagedExercise } from '../../lib/types';
+import { SectionTabs } from '../../components/SectionTabs';
+import { CONTENT_TABS } from '../../components/section-tabs';
 
 interface Draft {
   id: string | null;
@@ -208,6 +210,7 @@ export function ManageExercisesPage() {
 
   return (
     <div className="space-y-5">
+      <SectionTabs tabs={CONTENT_TABS} label="Cours et exercices" />
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold">Gestion des exercices</h1>
         <button className="btn-primary ml-auto" onClick={() => setDraft(draft ? null : emptyDraft())}>

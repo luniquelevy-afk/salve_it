@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { ErrorBanner } from '../../components/ErrorBanner';
 import { api, ApiError } from '../../lib/api';
 import { QUESTION_STATUS_LABELS, type Question, type QuestionOption, type QuestionStatus } from '../../lib/types';
+import { SectionTabs } from '../../components/SectionTabs';
+import { TEST_TABS } from '../../components/section-tabs';
 
 const OPTION_KEYS = ['A', 'B', 'C', 'D', 'E', 'F'];
 const MAX_VARIANTS = 5;
@@ -174,6 +176,7 @@ export function QuestionsPage() {
 
   return (
     <div className="space-y-5">
+      <SectionTabs tabs={TEST_TABS} label="Tests et questions" />
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold">Banque de questions</h1>
         <button className="btn-primary ml-auto" onClick={() => setDraft(draft ? null : emptyDraft(filters.category))}>

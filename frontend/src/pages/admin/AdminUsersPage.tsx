@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../auth/auth-context';
 import { api, apiDownload, ApiError } from '../../lib/api';
 import { CEFR_LEVELS, ROLE_LABELS, type Account, type AppRole, type CefrLevel } from '../../lib/types';
@@ -21,7 +22,11 @@ const fileSlug = (name: string) =>
 export function AdminUsersPage() {
   const { me } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [roleFilter, setRoleFilter] = useState<AppRole | ''>('');
+  // Filtre de rôle porté par l'URL (?role=student) : liens « Étudiants » / « Enseignants » du menu.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const roleParam = searchParams.get('role');
+  const roleFilter: AppRole | '' = roleParam === 'student' || roleParam === 'teacher' || roleParam === 'admin' ? roleParam : '';
+  const setRoleFilter = (role: AppRole | '') => setSearchParams(role ? { role } : {}, { replace: true });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -29,6 +34,15 @@ export function AdminUsersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [credentials, setCredentials] = useState<Credentials | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  // ?nouveau=student|teacher (actions rapides de l'accueil) : ouvre le formulaire pré-rempli.
+  useEffect(() => {
+    const role = searchParams.get('nouveau');
+    if (role !== 'student' && role !== 'teacher') return;
+    setForm({ ...EMPTY_FORM, role });
+    setShowForm(true);
+    setSearchParams({ role }, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -118,7 +132,7 @@ export function AdminUsersPage() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-bold">Comptes</h1>
+        <h1 className="text-2xl font-bold">{roleFilter === 'student' ? 'Étudiants' : roleFilter === 'teacher' ? 'Enseignants' : roleFilter === 'admin' ? 'Administrateurs' : 'Comptes'}</h1>
         <select className="input w-auto" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value as AppRole | '')} aria-label="Filtrer par rôle">
           <option value="">Tous les rôles</option>
           {(Object.keys(ROLE_LABELS) as AppRole[]).map((role) => (

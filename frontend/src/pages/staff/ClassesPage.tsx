@@ -4,11 +4,13 @@ import { ClassAttendancePanel, ClassHomeworkPanel } from '../../components/Class
 import { ErrorBanner } from '../../components/ErrorBanner';
 import { api, ApiError } from '../../lib/api';
 import { CEFR_LEVELS, type Account, type CefrLevel, type ClassDetail, type ClassSummary, type Program } from '../../lib/types';
+import { useScrollToHash } from '../../hooks/useScrollToHash';
 
 export function ClassesPage() {
   const { me } = useAuth();
   const isAdmin = me?.role === 'admin';
   const [classes, setClasses] = useState<ClassSummary[] | null>(null);
+  useScrollToHash(classes !== null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<ClassDetail | null>(null);
   const [programs, setPrograms] = useState<Program[]>([]);
@@ -230,7 +232,7 @@ export function ClassesPage() {
       )}
 
       {isAdmin && (
-        <section className="space-y-3">
+        <section id="programmes" className="scroll-mt-20 space-y-3">
           <h2 className="text-lg font-semibold">Programmes</h2>
           <form onSubmit={createProgram} className="card flex flex-wrap gap-3">
             <input className="input flex-1" required maxLength={120} placeholder="Nom du programme" aria-label="Nom du programme" value={programForm.name} onChange={(e) => setProgramForm({ ...programForm, name: e.target.value })} />

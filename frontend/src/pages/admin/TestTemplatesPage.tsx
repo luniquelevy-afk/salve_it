@@ -4,6 +4,8 @@ import { ErrorBanner } from '../../components/ErrorBanner';
 import { api, ApiError } from '../../lib/api';
 import { formatDateTime, formatMinutes } from '../../lib/format';
 import type { AdminTestTemplate } from '../../lib/types';
+import { SectionTabs } from '../../components/SectionTabs';
+import { TEST_TABS } from '../../components/section-tabs';
 
 interface Draft {
   id: string | null;
@@ -99,6 +101,7 @@ export function TestTemplatesPage() {
 
   return (
     <div className="space-y-5">
+      <SectionTabs tabs={TEST_TABS} label="Tests et questions" />
       <div className="flex flex-wrap items-center gap-3">
         <div>
           <h1 className="text-2xl font-bold">Modèles de test</h1>

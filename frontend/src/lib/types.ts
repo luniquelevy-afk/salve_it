@@ -993,9 +993,11 @@ export interface StudentDashboardSummary {
     firstPercent: number | null;
     progressionPoints: number | null;
   };
-  embassy: { count: number; averageScore: number | null; averageCoherence: number | null; latestInconsistencies: number | null };
+  embassy: { count: number; averageScore: number | null; averageCoherence: number | null; latestInconsistencies: number | null; latestScore: number | null };
   documents: { total: number; validated: number; missing: number; needsCorrection: number; expired: number; expiringSoon: number };
   upcoming: { kind: 'class_session' | 'document_expiry'; date: string; title: string; detail: string | null; link: string }[];
+  recent: { kind: 'simulation' | 'embassy' | 'exercise'; label: string; result: string; at: string; link: string }[];
+  lastExercise: { exerciseId: string; title: string; score: number; maxScore: number; createdAt: string } | null;
   generatedAt: string;
 }
 
@@ -1049,4 +1051,16 @@ export interface Gamification {
 
 export function homeFor(role: AppRole): string {
   return { student: '/etudiant', teacher: '/enseignant', admin: '/admin/tableau-de-bord' }[role];
+}
+
+// ── Accueil administrateur ──────────────────────────────────
+export type FollowUpReason = 'inactive' | 'score_drop' | 'struggling' | 'document_to_review' | 'document_correction' | 'report_to_review';
+
+export interface AdminHome {
+  kpis: { activeStudents: number; enrolledStudents: number; teachers: number; simulationsThisMonth: number; pendingLeads: number };
+  attention: { inactive: number; documentsToReview: number; scoreDrops: number; reportsToReview: number };
+  followUps: { studentId: string; name: string; reason: FollowUpReason; detail: string; link: string; others: string[] }[];
+  followUpsTotal: number;
+  activity: { kind: string; text: string; at: string; link: string | null }[];
+  trend: { date: string; simulations: number; averageScore: number | null }[];
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/auth-context';
 import { ROLE_LABELS, type AppRole } from '../lib/types';
 import { Logo } from './Logo';
@@ -9,6 +9,8 @@ interface NavItem {
   to: string;
   label: string;
   icon: string;
+  // Chemins supplémentaires qui rendent l'entrée active (pages sœurs, sous-pages).
+  also?: string[];
 }
 
 interface NavSection {
@@ -22,25 +24,14 @@ const NAV: Record<AppRole, NavSection[]> = {
     {
       title: 'Mon espace',
       items: [
-        { to: '/etudiant', label: 'Tableau de bord', icon: '📈' },
+        { to: '/etudiant', label: 'Tableau de bord', icon: '🏠' },
+        { to: '/etudiant/simulations', label: 'Tests', icon: '⏱️' },
+        { to: '/etudiant/entretien', label: 'Entretien IA', icon: '🎙️' },
+        { to: '/etudiant/cours', label: 'Cours', icon: '📚', also: ['/etudiant/exercices', '/etudiant/devoirs'] },
+        { to: '/etudiant/progression', label: 'Progression', icon: '📈' },
+        { to: '/etudiant/documents', label: 'Documents', icon: '📄' },
         { to: '/calendrier', label: 'Calendrier', icon: '📅' },
-        { to: '/etudiant/profil', label: 'Mon profil', icon: '👤' },
-      ],
-    },
-    {
-      title: 'Apprendre',
-      items: [
-        { to: '/etudiant/cours', label: 'Cours', icon: '📚' },
-        { to: '/etudiant/exercices', label: 'Exercices', icon: '✍️' },
-        { to: '/etudiant/devoirs', label: 'Mes devoirs', icon: '📝' },
-      ],
-    },
-    {
-      title: 'Se préparer',
-      items: [
-        { to: '/etudiant/simulations', label: 'Simulations', icon: '⏱️' },
-        { to: '/etudiant/entretien', label: 'Entretien consulaire', icon: '🎙️' },
-        { to: '/etudiant/documents', label: 'Mes documents', icon: '📄' },
+        { to: '/etudiant/profil', label: 'Profil', icon: '👤' },
       ],
     },
   ],
@@ -48,7 +39,7 @@ const NAV: Record<AppRole, NavSection[]> = {
     {
       title: 'Suivi',
       items: [
-        { to: '/enseignant', label: 'Tableau de bord', icon: '📈' },
+        { to: '/enseignant', label: 'Tableau de bord', icon: '🏠', also: ['/suivi/etudiants'] },
         { to: '/classes', label: 'Classes', icon: '👥' },
         { to: '/calendrier', label: 'Calendrier', icon: '📅' },
         { to: '/annonces', label: 'Annonces', icon: '📣' },
@@ -57,9 +48,8 @@ const NAV: Record<AppRole, NavSection[]> = {
     {
       title: 'Contenus',
       items: [
-        { to: '/gestion/cours', label: 'Cours', icon: '📚' },
-        { to: '/gestion/exercices', label: 'Exercices', icon: '✍️' },
-        { to: '/banque-questions', label: 'Banque de questions', icon: '❓' },
+        { to: '/gestion/cours', label: 'Cours et exercices', icon: '📚', also: ['/gestion/exercices'] },
+        { to: '/banque-questions', label: 'Tests et questions', icon: '❓' },
       ],
     },
   ],
@@ -67,36 +57,65 @@ const NAV: Record<AppRole, NavSection[]> = {
     {
       title: 'Pilotage',
       items: [
-        { to: '/admin/tableau-de-bord', label: "Vue d'ensemble", icon: '📈' },
-        { to: '/admin/comptes', label: 'Comptes', icon: '🧩' },
+        { to: '/admin/tableau-de-bord', label: 'Tableau de bord', icon: '🏠' },
+        { to: '/admin/statistiques', label: 'Statistiques', icon: '📈' },
+      ],
+    },
+    {
+      title: 'Personnes',
+      items: [
+        { to: '/admin/comptes?role=student', label: 'Étudiants', icon: '🎓', also: ['/suivi/etudiants'] },
+        { to: '/admin/comptes?role=teacher', label: 'Enseignants', icon: '🧑‍🏫' },
         { to: '/admin/prospects', label: 'Prospects', icon: '📥' },
       ],
     },
     {
       title: 'Pédagogie',
       items: [
+        { to: '/classes#programmes', label: 'Programmes', icon: '📘' },
         { to: '/classes', label: 'Classes', icon: '👥' },
-        { to: '/gestion/cours', label: 'Cours', icon: '📚' },
-        { to: '/gestion/exercices', label: 'Exercices', icon: '✍️' },
-        { to: '/banque-questions', label: 'Banque de questions', icon: '❓' },
-        { to: '/admin/modeles-de-test', label: 'Modèles de test', icon: '🧪' },
+        { to: '/banque-questions', label: 'Tests et questions', icon: '❓', also: ['/admin/modeles-de-test'] },
+        { to: '/gestion/cours', label: 'Cours et exercices', icon: '📚', also: ['/gestion/exercices'] },
+        { to: '/admin/documents', label: 'Documents', icon: '📄' },
         { to: '/annonces', label: 'Annonces', icon: '📣' },
       ],
     },
     {
-      title: 'Administration',
+      title: 'Paramètres',
       items: [
+        { to: '/admin/parametres', label: 'Paramètres', icon: '⚙️' },
         { to: '/admin/ia', label: 'Agent IA', icon: '🤖' },
         { to: '/admin/checklist', label: 'Checklist visa', icon: '🛂' },
         { to: '/admin/site', label: 'Site public', icon: '🌐' },
         { to: '/admin/conservation', label: 'Conservation des données', icon: '🗄️' },
-        { to: '/admin/parametres', label: 'Paramètres', icon: '⚙️' },
       ],
     },
   ],
 };
 
+// Barre inférieure mobile de l'espace étudiant.
+const STUDENT_TABS: NavItem[] = [
+  { to: '/etudiant', label: 'Accueil', icon: '🏠' },
+  { to: '/etudiant/simulations', label: 'Tests', icon: '⏱️' },
+  { to: '/etudiant/entretien', label: 'Entretien', icon: '🎙️' },
+  { to: '/etudiant/cours', label: 'Cours', icon: '📚', also: ['/etudiant/exercices', '/etudiant/devoirs'] },
+  { to: '/etudiant/profil', label: 'Profil', icon: '👤' },
+];
+
 const SPACE_LABELS: Record<AppRole, string> = { student: 'Espace étudiant', teacher: 'Espace enseignant', admin: 'Console admin' };
+
+// Entrée active : même chemin (et même paramètre ou ancre s'il y en a), sous-page ou page sœur.
+function isActive(item: NavItem, location: { pathname: string; search: string; hash: string }, home: string): boolean {
+  const url = new URL(item.to, 'http://local');
+  const samePath = location.pathname === url.pathname || (url.pathname !== home && location.pathname.startsWith(`${url.pathname}/`));
+  if (samePath) {
+    if (url.hash) return location.hash === url.hash;
+    if (location.hash === '#programmes' && url.pathname === '/classes') return false;
+    const current = new URLSearchParams(location.search);
+    return [...url.searchParams].every(([key, value]) => current.get(key) === value);
+  }
+  return (item.also ?? []).some((path) => location.pathname === path || location.pathname.startsWith(`${path}/`));
+}
 
 type Theme = 'dark' | 'light';
 
@@ -132,12 +151,13 @@ export function AppShell() {
   }, [theme]);
 
   // Le tiroir mobile se referme à chaque changement de page.
-  useEffect(() => setOpen(false), [location.pathname]);
+  useEffect(() => setOpen(false), [location.pathname, location.search, location.hash]);
 
   if (!me) return null;
   const sections = NAV[me.role];
   const home = sections[0]?.items[0]?.to ?? '/';
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+  const student = me.role === 'student';
 
   const sidebar = (
     <Sidebar
@@ -170,26 +190,26 @@ export function AppShell() {
     >
       {sections.map((section) => (
         <div key={section.title}>
-          <p className="px-3 pb-1 pt-5 text-[10px] font-semibold tracking-wider text-[var(--c-faint)] uppercase">{section.title}</p>
-          {section.items.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === home}
-              className={({ isActive }) =>
-                `flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition ${
-                  isActive
-                    ? 'bg-[var(--c-primary-soft)] text-[var(--c-primary)]'
-                    : 'text-[var(--c-muted)] hover:bg-[var(--c-subtle)] hover:text-[var(--c-text)]'
-                }`
-              }
-            >
-              <span aria-hidden="true" className="w-5 text-center">
-                {item.icon}
-              </span>
-              {item.label}
-            </NavLink>
-          ))}
+          {sections.length > 1 && <p className="px-3 pb-1 pt-5 text-[10px] font-semibold tracking-wider text-[var(--c-faint)] uppercase">{section.title}</p>}
+          {sections.length === 1 && <div className="h-3" />}
+          {section.items.map((item) => {
+            const active = isActive(item, location, home);
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                aria-current={active ? 'page' : undefined}
+                className={`flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition ${
+                  active ? 'bg-[var(--c-primary-soft)] text-[var(--c-primary)]' : 'text-[var(--c-muted)] hover:bg-[var(--c-subtle)] hover:text-[var(--c-text)]'
+                }`}
+              >
+                <span aria-hidden="true" className="w-5 text-center">
+                  {item.icon}
+                </span>
+                {item.label}
+              </Link>
+            );
+          })}
         </div>
       ))}
     </Sidebar>
@@ -225,10 +245,32 @@ export function AppShell() {
             <NotificationBell />
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl min-w-0 flex-1 px-4 py-6 lg:px-8">
+        <main className={`mx-auto w-full max-w-7xl min-w-0 flex-1 px-4 py-6 lg:px-8 ${student ? 'pb-24 lg:pb-6' : ''}`}>
           <Outlet />
         </main>
       </div>
+
+      {/* Barre inférieure (mobile, espace étudiant) */}
+      {student && (
+        <nav aria-label="Navigation rapide" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-[var(--c-border)] bg-[var(--c-elev)] pb-[env(safe-area-inset-bottom)] lg:hidden">
+          {STUDENT_TABS.map((item) => {
+            const active = isActive(item, location, home);
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                aria-current={active ? 'page' : undefined}
+                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium ${active ? 'text-[var(--c-primary)]' : 'text-[var(--c-muted)]'}`}
+              >
+                <span aria-hidden="true" className="text-lg leading-none">
+                  {item.icon}
+                </span>
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      )}
     </div>
   );
 }

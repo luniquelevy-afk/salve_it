@@ -45,6 +45,10 @@ for (const [index, fullName] of NAMES.entries()) {
   students.push(uid);
 }
 
+// Le compte étudiant de démonstration (demo:seed), s'il existe, reçoit aussi de l'activité.
+const demoStudent = await must(db.from('profiles').select('id').eq('email', 'etudiant.demo@salve.test').maybeSingle());
+if (demoStudent) students.push(demoStudent.id as string);
+
 // Engagement croissant sur la période, avec une progression de la réussite.
 const simulations = [];
 const attempts = [];

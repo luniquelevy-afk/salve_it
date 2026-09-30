@@ -6,6 +6,8 @@ import { Meter } from '../../components/Meter';
 import { api, ApiError } from '../../lib/api';
 import { formatDateTime } from '../../lib/format';
 import { ATTENDANCE_LABELS, type HomeworkState, type MyAttendance, type MyHomework } from '../../lib/types';
+import { SectionTabs } from '../../components/SectionTabs';
+import { STUDENT_LEARNING_TABS } from '../../components/section-tabs';
 
 // Ce qui demande une action d'abord, puis ce qui est rendu ou validé.
 const ORDER: Record<HomeworkState, number> = { a_reprendre: 0, en_retard: 1, a_faire: 2, rendu: 3, valide: 4 };
@@ -54,6 +56,7 @@ export function HomeworkPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
+      <SectionTabs tabs={STUDENT_LEARNING_TABS} label="Apprendre" />
       <div>
         <h1 className="text-2xl font-bold">Mes devoirs</h1>
         <p className="text-stone-600">Les devoirs de vos classes et votre présence aux séances.</p>

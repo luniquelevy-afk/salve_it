@@ -4,6 +4,8 @@ import { ErrorBanner } from '../../components/ErrorBanner';
 import { api, ApiError } from '../../lib/api';
 import { formatPercent } from '../../lib/format';
 import { CEFR_LEVELS, EXERCISE_TYPE_LABELS, type CefrLevel, type ExerciseSummary } from '../../lib/types';
+import { SectionTabs } from '../../components/SectionTabs';
+import { STUDENT_LEARNING_TABS } from '../../components/section-tabs';
 
 type LevelFilter = CefrLevel | 'all' | '';
 
@@ -23,6 +25,7 @@ export function ExercisesPage() {
 
   return (
     <div className="space-y-5">
+      <SectionTabs tabs={STUDENT_LEARNING_TABS} label="Apprendre" />
       <div className="flex flex-wrap items-end gap-3">
         <div>
           <h1 className="text-2xl font-bold">Exercices</h1>
