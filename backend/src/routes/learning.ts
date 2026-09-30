@@ -11,6 +11,7 @@ import { recordAudit } from '../services/audit.js';
 import { getEmbassyProgress, getEmbassySessionForStaff } from '../services/embassy.js';
 import { createScenario, listScenarios, updateScenario } from '../services/embassy-scenarios.js';
 import { getLearningPath, getReadiness, getStudentProfile, saveStudentProfile } from '../services/student-profile.js';
+import { DASHBOARD_PERIODS, type DashboardPeriod } from '../services/dashboard-analytics.js';
 import { createFeedback, getAdminOverview, getStudentFollowUp, getTeacherOverview, updateFeedback } from '../services/teacher-dashboard.js';
 import { getReviewSummary } from '../services/test-engine.js';
 import { createTemplate, listTemplatesForAdmin, updateTemplate } from '../services/test-templates.js';
@@ -120,8 +121,10 @@ export const adminLearningRouter = Router();
 
 adminLearningRouter.use(...adminOnly);
 
-adminLearningRouter.get('/dashboard', async (_req, res) => {
-  res.json(await getAdminOverview());
+// Période des analyses : 7, 30 (défaut), 90 ou 365 jours.
+adminLearningRouter.get('/dashboard', async (req, res) => {
+  const { days } = z.object({ days: z.coerce.number().pipe(z.union(DASHBOARD_PERIODS.map((value) => z.literal(value)))).default(30) }).parse(req.query);
+  res.json(await getAdminOverview(days as DashboardPeriod));
 });
 
 const templateSchema = z.strictObject({

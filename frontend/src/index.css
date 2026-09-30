@@ -290,8 +290,8 @@
 [data-theme='dark'] .border-sand {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
-[data-theme='dark'] .divide-stone-100 > * + *,
-[data-theme='dark'] .divide-stone-200 > * + * {
+[data-theme='dark'] .divide-stone-100 > *,
+[data-theme='dark'] .divide-stone-200 > * {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 /* Survols fréquents */
@@ -325,4 +325,166 @@
 /* Le vert de marque reste lisible sur fond sombre. */
 [data-theme='dark'] .text-verde-dark {
   color: #2dd4bf !important;
+}
+
+/* ── Espace interne (back-office, espaces enseignant et étudiant) ─────────────
+   Design repris de la plateforme interne Alpha Academy (style « intra ») :
+   surfaces #12151a / #1a1e24, accent cyan, Inter. Jetons scopés à .app-shell
+   (posé par AppShell avec data-theme) : le site public garde son identité.
+   Spécificité (.app-shell[data-theme] …) supérieure aux anciennes surcharges. */
+.app-shell {
+  --c-radius: 14px;
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--c-bg);
+  color: var(--c-text);
+}
+.app-shell[data-theme='dark'] {
+  color-scheme: dark;
+  --c-bg: #12151a;
+  --c-elev: #1a1e24;
+  --c-subtle: #171b21;
+  --c-border: #282f38;
+  --c-border-strong: #3a4454;
+  --c-text: #e5e7eb;
+  --c-muted: #9ca3af;
+  --c-faint: #6b7280;
+  --c-primary: #00d0bf;
+  --c-primary-hover: #00b8a8;
+  --c-primary-soft: rgba(0, 208, 191, 0.15);
+  --c-on-primary: #06231f;
+  --c-success: #22c55e;
+  --c-danger: #ef4444;
+  --c-danger-soft: rgba(239, 68, 68, 0.14);
+  /* Graphiques : 3 teintes catégorielles validées (CVD) sur #1a1e24 + accent pour les séries uniques. */
+  --viz-accent: #00d0bf;
+  --viz-1: #3987e5;
+  --viz-2: #d95926;
+  --viz-3: #199e70;
+  --viz-grid: #282f38;
+}
+.app-shell[data-theme='light'] {
+  color-scheme: light;
+  --c-bg: #f8fafc;
+  --c-elev: #ffffff;
+  --c-subtle: #f1f5f9;
+  --c-border: #dde3eb;
+  --c-border-strong: #cbd5e1;
+  --c-text: #0f172a;
+  --c-muted: #475569;
+  --c-faint: #94a3b8;
+  --c-primary: #00b8a8;
+  --c-primary-hover: #009b8e;
+  --c-primary-soft: rgba(0, 184, 168, 0.12);
+  --c-on-primary: #04231f;
+  --c-success: #16a34a;
+  --c-danger: #dc2626;
+  --c-danger-soft: rgba(220, 38, 38, 0.1);
+  --viz-accent: #0d9488;
+  --viz-1: #2a78d6;
+  --viz-2: #eb6834;
+  --viz-3: #1baf7a;
+  --viz-grid: #e2e8f0;
+}
+.app-shell h1,
+.app-shell h2,
+.app-shell h3 {
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--c-text);
+}
+.app-shell :focus-visible {
+  outline-color: var(--c-primary);
+}
+.app-shell[data-theme] .bg-white,
+.app-shell[data-theme] .bg-panna-alt {
+  background-color: var(--c-elev) !important;
+}
+.app-shell[data-theme] .bg-panna,
+.app-shell[data-theme] .bg-stone-900 {
+  background-color: var(--c-bg) !important;
+}
+.app-shell[data-theme] .bg-stone-50,
+.app-shell[data-theme] .bg-stone-100,
+.app-shell[data-theme] .hover\:bg-stone-50:hover,
+.app-shell[data-theme] .hover\:bg-stone-100:hover,
+.app-shell[data-theme] .hover\:bg-panna-alt:hover {
+  background-color: var(--c-subtle) !important;
+}
+.app-shell[data-theme] .text-stone-900,
+.app-shell[data-theme] .text-stone-800,
+.app-shell[data-theme] .text-notte {
+  color: var(--c-text) !important;
+}
+.app-shell[data-theme] .text-stone-700,
+.app-shell[data-theme] .text-stone-600 {
+  color: var(--c-muted) !important;
+}
+.app-shell[data-theme] .text-stone-500,
+.app-shell[data-theme] .text-stone-400,
+.app-shell[data-theme] .text-stone-300 {
+  color: var(--c-faint) !important;
+}
+.app-shell[data-theme] .border-sand,
+.app-shell[data-theme] .border-stone-100,
+.app-shell[data-theme] .border-stone-200,
+.app-shell[data-theme] .border-stone-300,
+.app-shell[data-theme] .divide-stone-100 > *,
+.app-shell[data-theme] .divide-stone-200 > * {
+  border-color: var(--c-border) !important;
+}
+.app-shell[data-theme] .card {
+  background-color: var(--c-elev) !important;
+  border-color: var(--c-border) !important;
+  border-radius: var(--c-radius);
+  color: var(--c-text);
+  box-shadow: none;
+}
+.app-shell[data-theme] .input {
+  background-color: var(--c-bg) !important;
+  border-color: var(--c-border) !important;
+  color: var(--c-text) !important;
+}
+.app-shell[data-theme] .input:focus {
+  border-color: var(--c-primary) !important;
+  --tw-ring-color: var(--c-primary-soft);
+}
+.app-shell[data-theme] .label {
+  color: var(--c-text) !important;
+}
+.app-shell[data-theme] .btn-primary {
+  background-color: var(--c-primary) !important;
+  color: var(--c-on-primary) !important;
+}
+.app-shell[data-theme] .btn-primary:hover {
+  background-color: var(--c-primary-hover) !important;
+}
+.app-shell[data-theme] .btn-secondary,
+.app-shell[data-theme] .btn-notte {
+  background-color: var(--c-elev) !important;
+  border: 1px solid var(--c-border) !important;
+  color: var(--c-text) !important;
+}
+.app-shell[data-theme] .btn-secondary:hover,
+.app-shell[data-theme] .btn-notte:hover {
+  background-color: var(--c-subtle) !important;
+}
+.app-shell[data-theme] .btn-danger {
+  background-color: transparent !important;
+  border-color: color-mix(in srgb, var(--c-danger) 40%, transparent) !important;
+  color: var(--c-danger) !important;
+}
+.app-shell[data-theme] .btn-danger:hover {
+  background-color: var(--c-danger-soft) !important;
+}
+.app-shell[data-theme] .text-verde,
+.app-shell[data-theme] .text-verde-dark {
+  color: var(--c-primary) !important;
+}
+.app-shell[data-theme] .bg-verde {
+  background-color: var(--c-primary) !important;
+}
+.app-shell[data-theme] .bg-verde\/10,
+.app-shell[data-theme] .bg-verde\/15 {
+  background-color: var(--c-primary-soft) !important;
 }

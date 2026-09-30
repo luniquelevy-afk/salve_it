@@ -4,6 +4,7 @@ import type { AuthContext } from '../middleware/auth.js';
 import { assertCanFollowStudent } from './access.js';
 import { recordAudit } from './audit.js';
 import { listEmbassySessions } from './embassy.js';
+import type { DashboardPeriod } from './dashboard-analytics.js';
 import { adminOverview, teacherOverview } from './overviews.js';
 import { getReadiness, getStudentProfile } from './student-profile.js';
 import { listSimulations } from './test-engine.js';
@@ -129,6 +130,6 @@ export async function updateFeedback(
   return toFeedback(data as unknown as Record<string, unknown>, auth);
 }
 
-export async function getAdminOverview() {
-  return adminOverview();
+export async function getAdminOverview(days?: DashboardPeriod) {
+  return adminOverview(days);
 }

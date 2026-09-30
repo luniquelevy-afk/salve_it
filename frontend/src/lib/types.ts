@@ -935,6 +935,37 @@ export interface AdminOverview {
   ai: { monthCost: number; monthCalls: number; costPerStudent: number | null; byOperation: { operation: string; calls: number; cost: number }[] };
   leads: { total: number; new30: number; converted: number; toFollowUp: number; bySource: { source: string; total: number }[] };
   hardestQuestions: { id: string; text: string; category: string; answers: number; successRate: number }[];
+  analytics: DashboardAnalytics;
+}
+
+export type DashboardDays = 7 | 30 | 90 | 365;
+
+export interface DashboardKpi {
+  value: number | null;
+  previous: number | null;
+}
+
+// Analyses de la période choisie (comparées à la période précédente de même durée).
+export interface DashboardAnalytics {
+  period: { days: DashboardDays; start: string; end: string; granularity: 'day' | 'week' };
+  kpis: Record<'activeStudents' | 'simulations' | 'accuracy' | 'exercises' | 'interviews' | 'interviewScore' | 'newLeads' | 'aiCost', DashboardKpi>;
+  series: {
+    date: string;
+    simulations: number;
+    exercises: number;
+    interviews: number;
+    activeStudents: number;
+    accuracy: number | null;
+    leads: number;
+    aiCost: number;
+  }[];
+  breakdowns: {
+    studentsByLevel: { level: string | null; count: number }[];
+    leadsByStatus: { status: string; count: number }[];
+    simulationsByMode: { mode: string; count: number }[];
+    embassyByStatus: { status: string; count: number }[];
+    categoryAccuracy: { category: string; answers: number; accuracy: number | null }[];
+  };
 }
 
 export interface AdminTestTemplate {

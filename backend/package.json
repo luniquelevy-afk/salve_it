@@ -12,7 +12,8 @@
     "demo:seed": "tsx src/scripts/seed-demo-accounts.ts",
     "db:migrate": "tsx src/scripts/migrate.ts",
     "db:seed": "tsx src/scripts/seed-demo-content.ts",
-    "test:integration": "vitest run --config vitest.integration.config.ts"
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "demo:activity": "tsx src/scripts/seed-demo-activity.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.125.0",

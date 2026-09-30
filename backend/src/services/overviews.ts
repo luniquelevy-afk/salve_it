@@ -1,6 +1,7 @@
 // Tableaux de bord agrégés (anciennes fonctions SQL teacher_overview, admin_overview,
 // documents_overview et vue question_success_stats), recalculés à partir de Firestore.
 import { db } from '../lib/db/index.js';
+import { buildAnalytics, type DashboardPeriod } from './dashboard-analytics.js';
 
 type Row = Record<string, unknown>;
 
@@ -237,22 +238,25 @@ export async function teacherOverview(teacherId: string | null) {
 // ─────────────────────────────────────────────────────────────
 // Tableau de bord admin
 // ─────────────────────────────────────────────────────────────
-export async function adminOverview() {
+export async function adminOverview(days: DashboardPeriod = 30) {
   const since = (days: number) => isoDaysFromNow(-days);
   const nowIso = new Date().toISOString();
   const today = new Date();
   const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1)).toISOString();
 
-  const [activeProfiles, simulations, attempts, embassy, monthUsage, leads] = await Promise.all([
-    rows<{ id: string; role: string }>(db.from('profiles').select('id, role').eq('status', 'active')),
-    // Activité sur 90 jours au plus : plage exécutée par Firestore.
-    rows<Row>(db.from('simulations').select('id, student_id, status, started_at, completed_at').gte('started_at', since(90))),
-    rows<{ student_id: string; created_at: string }>(db.from('exercise_attempts').select('student_id, created_at').gte('created_at', since(90))),
-    rows<Row>(db.from('embassy_sessions').select('student_id, status, input_mode, started_at, ended_at, overall_score')),
-    rows<{ student_id: string | null; operation: string; estimated_cost: number }>(db.from('ai_usage_logs').select('student_id, operation, estimated_cost').gte('created_at', monthStart)),
+  // Fenêtre lue : 90 jours (indicateurs d'activité) ou deux périodes (comparaison avec la précédente).
+  const horizon = since(Math.max(90, 2 * days));
+  const usageFrom = [monthStart, since(2 * days)].sort()[0] as string;
+  const [activeProfiles, simulations, attempts, embassy, usage, leads] = await Promise.all([
+    rows<{ id: string; role: string; level: string | null }>(db.from('profiles').select('id, role, level').eq('status', 'active')),
+    rows<Row>(db.from('simulations').select('id, student_id, mode, status, started_at, completed_at, score_by_section').gte('started_at', horizon)),
+    rows<{ student_id: string; created_at: string }>(db.from('exercise_attempts').select('student_id, created_at').gte('created_at', horizon)),
+    rows<Row>(db.from('embassy_sessions').select('student_id, status, input_mode, started_at, ended_at, completed_at, overall_score')),
+    rows<{ student_id: string | null; operation: string; estimated_cost: number; created_at: string }>(db.from('ai_usage_logs').select('student_id, operation, estimated_cost, created_at').gte('created_at', usageFrom)),
     rows<Row>(db.from('leads').select('status, source, created_at, next_follow_up_at')),
   ]);
 
+  const monthUsage = usage.filter((entry) => entry.created_at >= monthStart);
   const active = new Set(activeProfiles.map((profile) => profile.id));
   const lastActivity = new Map<string, string>();
   const track = (studentId: unknown, at: unknown) => {
@@ -326,6 +330,7 @@ export async function adminOverview() {
         answers: stat.answers_count,
         successRate: round((100 * stat.correct_count) / stat.answers_count),
       })),
+    analytics: buildAnalytics({ days, now: new Date(), profiles: activeProfiles, simulations, attempts, embassy, aiUsage: usage, leads }),
   };
 }
 
