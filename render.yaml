@@ -16,7 +16,7 @@ services:
       - key: AI_PROVIDER
         value: nvidia
       - key: NVIDIA_MODEL
-        value: meta/llama-3.3-70b-instruct
+        value: z-ai/glm-5.3-flash
       # true uniquement avec un accès de production NVIDIA (AI Enterprise ou NIM auto-hébergé) :
       # l'essai gratuit interdit les données personnelles (entretiens de visa, ENF-02).
       - key: NVIDIA_PRODUCTION_ACCESS

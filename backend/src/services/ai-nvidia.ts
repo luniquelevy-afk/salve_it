@@ -18,11 +18,16 @@ interface ChatMessage {
 }
 
 interface ChatCompletion {
-  choices?: { message?: { content?: string | null }; finish_reason?: string }[];
+  choices?: { message?: { content?: string | null; reasoning_content?: string | null }; finish_reason?: string }[];
   usage?: { prompt_tokens?: number; completion_tokens?: number };
 }
 
-const REQUEST_TIMEOUT_MS = 120_000;
+// Tour d'entretien interactif : délai court ; rapport et variantes (tâche de fond) : délai long.
+const TIMEOUT_MS: Record<string, number> = { embassy_turn: 60_000, embassy_report: 300_000, question_generation: 300_000 };
+// Surcharge ou limite de débit passagères du catalogue : nouvelles tentatives espacées.
+const TRANSIENT_STATUSES = new Set([429, 502, 503, 504]);
+const RETRY_DELAYS_MS = [1_500, 4_000];
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Schéma JSON lisible par le modèle (sans métadonnées superflues).
 export function toJsonSchema(schema: z.ZodType): Record<string, unknown> {
@@ -83,7 +88,7 @@ function addUsage(a: AiUsage, b: AiUsage): AiUsage {
 // Modèles qui refusent response_format : mémorisés pour ne plus l'envoyer.
 const noStructuredOutput = new Set<string>();
 
-async function complete(operation: string, messages: ChatMessage[], schema: z.ZodType, maxTokens: number): Promise<{ text: string; usage: AiUsage }> {
+async function complete(operation: string, messages: ChatMessage[], schema: z.ZodType, maxTokens: number, attempt = 0): Promise<{ text: string; usage: AiUsage }> {
   if (!env.NVIDIA_API_KEY) throw new AiError('unavailable', 'NVIDIA_API_KEY non configurée');
   const structured = !noStructuredOutput.has(env.NVIDIA_MODEL);
   const body = {
@@ -101,7 +106,7 @@ async function complete(operation: string, messages: ChatMessage[], schema: z.Zo
       method: 'POST',
       headers: { Authorization: `Bearer ${env.NVIDIA_API_KEY}`, 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(TIMEOUT_MS[operation] ?? 120_000),
     });
   } catch (err) {
     logger.error({ operation, message: err instanceof Error ? err.message : undefined }, 'nvidia_network_error');
@@ -115,6 +120,11 @@ async function complete(operation: string, messages: ChatMessage[], schema: z.Zo
       logger.warn({ operation, model: env.NVIDIA_MODEL }, 'nvidia_structured_output_unsupported');
       return complete(operation, messages, schema, maxTokens);
     }
+    if (TRANSIENT_STATUSES.has(response.status) && attempt < RETRY_DELAYS_MS.length) {
+      logger.warn({ operation, status: response.status, attempt: attempt + 1 }, 'nvidia_retry');
+      await sleep(RETRY_DELAYS_MS[attempt] as number);
+      return complete(operation, messages, schema, maxTokens, attempt + 1);
+    }
     if (response.status === 429) throw new AiError('rate_limited', `${operation}: quota NVIDIA atteint`);
     if (response.status === 401 || response.status === 403) {
       logger.error({ operation, status: response.status }, 'nvidia_auth_error');
@@ -125,8 +135,20 @@ async function complete(operation: string, messages: ChatMessage[], schema: z.Zo
   }
 
   const completion = (await response.json()) as ChatCompletion;
-  const text = completion.choices?.[0]?.message?.content ?? '';
-  if (!text.trim()) throw new AiError('invalid_output', `${operation}: réponse vide`);
+  const choice = completion.choices?.[0];
+  const text = choice?.message?.content ?? '';
+  if (!text.trim() && structured) {
+    // Certains modèles (ex. gpt-oss) renvoient un contenu vide avec response_format en conversation :
+    // on le désactive pour ce modèle et on relance sans.
+    noStructuredOutput.add(env.NVIDIA_MODEL);
+    logger.warn({ operation, model: env.NVIDIA_MODEL }, 'nvidia_structured_output_empty');
+    return complete(operation, messages, schema, maxTokens, attempt);
+  }
+  if (!text.trim()) {
+    // Modèle à raisonnement : budget de tokens épuisé avant la réponse.
+    logger.warn({ operation, finishReason: choice?.finish_reason, reasoning: Boolean(choice?.message?.reasoning_content) }, 'nvidia_empty_output');
+    throw new AiError('invalid_output', `${operation}: réponse vide${choice?.finish_reason === 'length' ? ' (limite de tokens atteinte)' : ''}`);
+  }
   return { text, usage: toUsage(completion.usage) };
 }
 
@@ -138,7 +160,14 @@ async function generate<S extends z.ZodType>(
   const messages: ChatMessage[] = [{ role: 'system', content: request.system + schemaInstruction(request.schema) }, ...request.messages];
   let usage: AiUsage | null = null;
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const result = await complete(operation, messages, request.schema, request.maxTokens);
+    let result: { text: string; usage: AiUsage };
+    try {
+      result = await complete(operation, messages, request.schema, request.maxTokens);
+    } catch (err) {
+      // Réponse vide : relancée comme une réponse hors schéma.
+      if (err instanceof AiError && err.kind === 'invalid_output' && attempt < 2) continue;
+      throw err;
+    }
     usage = usage ? addUsage(usage, result.usage) : result.usage;
     let problem: string;
     try {

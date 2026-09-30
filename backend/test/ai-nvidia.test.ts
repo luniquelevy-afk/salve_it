@@ -72,10 +72,26 @@ describe('nvidiaProvider', () => {
     expect(secondBody.response_format).toBeUndefined();
   });
 
-  it('traduit les erreurs HTTP', async () => {
-    fetchMock.mockResolvedValue(reply('trop de requêtes', 429));
+  it('réessaie après une surcharge passagère (503)', async () => {
+    fetchMock.mockResolvedValueOnce(reply('overloaded', 503)).mockResolvedValueOnce(reply('{"message":"Bonjour","end_interview":false}'));
+    const turn = await nvidiaProvider.runConsulTurn([{ role: 'user', text: 'x' }]);
+    expect(turn.message).toBe('Bonjour');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('traduit les erreurs HTTP persistantes', { timeout: 20_000 }, async () => {
+    fetchMock.mockImplementation(async () => reply('trop de requêtes', 429));
     await expect(nvidiaProvider.runConsulTurn([{ role: 'user', text: 'x' }])).rejects.toMatchObject({ kind: 'rate_limited' });
-    fetchMock.mockResolvedValue(reply('clé invalide', 401));
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    fetchMock.mockReset();
+    fetchMock.mockImplementation(async () => reply('clé invalide', 401));
     await expect(nvidiaProvider.runConsulTurn([{ role: 'user', text: 'x' }])).rejects.toMatchObject({ kind: 'unavailable' });
+  });
+
+  it('relance une réponse vide', async () => {
+    fetchMock.mockResolvedValueOnce(reply('')).mockResolvedValueOnce(reply('{"message":"Reprenons.","end_interview":false}'));
+    expect((await nvidiaProvider.runConsulTurn([{ role: 'user', text: 'x' }])).message).toBe('Reprenons.');
+    // Le modèle a déjà perdu response_format (test précédent) : la relance vient de la boucle de validation.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

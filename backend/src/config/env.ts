@@ -44,7 +44,8 @@ const schema = z
     NVIDIA_API_KEY: optionalSecret,
     // Catalogue hébergé par défaut ; un NIM auto-hébergé ou sous licence AI Enterprise se branche ici.
     NVIDIA_BASE_URL: z.url().default('https://integrate.api.nvidia.com/v1'),
-    NVIDIA_MODEL: z.string().trim().min(1).default('meta/llama-3.3-70b-instruct'),
+    // Choisi après essai comparatif (qualité du français, respect du format) ; meta/llama-3.3-70b est retiré du catalogue.
+    NVIDIA_MODEL: z.string().trim().min(1).default('z-ai/glm-5.3-flash'),
     // L'essai gratuit (build.nvidia.com) interdit la production et les données personnelles :
     // true uniquement avec un accès de production (licence NVIDIA AI Enterprise ou NIM auto-hébergé).
     NVIDIA_PRODUCTION_ACCESS: flag('false'),
