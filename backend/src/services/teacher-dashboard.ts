@@ -1,18 +1,17 @@
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import type { AuthContext } from '../middleware/auth.js';
 import { assertCanFollowStudent } from './access.js';
 import { recordAudit } from './audit.js';
 import { listEmbassySessions } from './embassy.js';
+import { adminOverview, teacherOverview } from './overviews.js';
 import { getReadiness, getStudentProfile } from './student-profile.js';
 import { listSimulations } from './test-engine.js';
 
 export { assertCanFollowStudent };
 
 export async function getTeacherOverview(auth: AuthContext) {
-  const { data, error } = await supabaseAdmin.rpc('teacher_overview', { p_teacher_id: auth.role === 'admin' ? null : auth.userId });
-  if (error) throw error;
-  return data as Record<string, unknown>;
+  return teacherOverview(auth.role === 'admin' ? null : auth.userId);
 }
 
 const FEEDBACK_COLUMNS = 'id, student_id, target_type, target_id, teacher_id, comment, follow_up_at, status, created_at, updated_at, profiles!teacher_feedback_teacher_id_fkey(full_name)';
@@ -35,13 +34,13 @@ function toFeedback(row: Record<string, unknown>, auth: AuthContext) {
 export async function getStudentFollowUp(auth: AuthContext, studentId: string) {
   await assertCanFollowStudent(auth, studentId);
   const [account, profile, readiness, path, simulations, embassy, feedback] = await Promise.all([
-    supabaseAdmin.from('profiles').select('id, full_name, level, status').eq('id', studentId).single(),
+    db.from('profiles').select('id, full_name, level, status').eq('id', studentId).single(),
     getStudentProfile(studentId),
     getReadiness(studentId),
-    supabaseAdmin.from('learning_paths').select('objective, weekly_goals, recommended_actions, progress_percent, generated_at').eq('student_id', studentId).maybeSingle(),
+    db.from('learning_paths').select('objective, weekly_goals, recommended_actions, progress_percent, generated_at').eq('student_id', studentId).maybeSingle(),
     listSimulations(studentId),
     listEmbassySessions(studentId),
-    supabaseAdmin.from('teacher_feedback').select(FEEDBACK_COLUMNS).eq('student_id', studentId).order('created_at', { ascending: false }),
+    db.from('teacher_feedback').select(FEEDBACK_COLUMNS).eq('student_id', studentId).order('created_at', { ascending: false }),
   ]);
   if (account.error) throw account.error;
   if (path.error) throw path.error;
@@ -68,7 +67,7 @@ export async function getStudentFollowUp(auth: AuthContext, studentId: string) {
 
 async function assertTargetBelongsToStudent(targetType: 'simulation' | 'embassy_session', targetId: string, studentId: string) {
   const table = targetType === 'simulation' ? 'simulations' : 'embassy_sessions';
-  const { data, error } = await supabaseAdmin.from(table).select('id').eq('id', targetId).eq('student_id', studentId).maybeSingle();
+  const { data, error } = await db.from(table).select('id').eq('id', targetId).eq('student_id', studentId).maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(404, 'target_not_found', 'Simulation ou entretien introuvable pour cet étudiant.');
 }
@@ -85,7 +84,7 @@ export interface FeedbackInput {
 export async function createFeedback(auth: AuthContext, input: FeedbackInput) {
   await assertCanFollowStudent(auth, input.studentId);
   await assertTargetBelongsToStudent(input.targetType, input.targetId, input.studentId);
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('teacher_feedback')
     .insert({
       student_id: input.studentId,
@@ -107,7 +106,7 @@ export async function updateFeedback(
   id: string,
   patch: { comment?: string | undefined; status?: 'a_revoir' | 'traite' | undefined; followUpAt?: string | null | undefined },
 ) {
-  const { data: current, error } = await supabaseAdmin.from('teacher_feedback').select('teacher_id, student_id').eq('id', id).maybeSingle();
+  const { data: current, error } = await db.from('teacher_feedback').select('teacher_id, student_id').eq('id', id).maybeSingle();
   if (error) throw error;
   if (!current) throw new HttpError(404, 'feedback_not_found', 'Commentaire introuvable.');
   await assertCanFollowStudent(auth, current.student_id as string);
@@ -115,7 +114,7 @@ export async function updateFeedback(
     throw new HttpError(403, 'feedback_forbidden', 'Seul l’auteur ou un admin peut modifier ce commentaire.');
   }
 
-  const { data, error: updateError } = await supabaseAdmin
+  const { data, error: updateError } = await db
     .from('teacher_feedback')
     .update({
       ...(patch.comment !== undefined && { comment: patch.comment }),
@@ -131,7 +130,5 @@ export async function updateFeedback(
 }
 
 export async function getAdminOverview() {
-  const { data, error } = await supabaseAdmin.rpc('admin_overview');
-  if (error) throw error;
-  return data as Record<string, unknown>;
+  return adminOverview();
 }

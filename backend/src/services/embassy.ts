@@ -1,6 +1,6 @@
 import { HttpError } from '../lib/http-error.js';
 import { logger } from '../lib/logger.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import { getEffectiveLimits } from './ai-limits.js';
 import type { StoredApiContent } from './ai-types.js';
 import { activeModel, AiError, isAiConfigured, runConsulTurn, runEmbassyReport, type AiUsage } from './ai.js';
@@ -78,7 +78,7 @@ function toHttpError(err: unknown): unknown {
 }
 
 async function recordUsage(studentId: string, sessionId: string, operation: 'embassy_turn' | 'embassy_report', usage: AiUsage) {
-  const { error } = await supabaseAdmin.from('ai_usage_logs').insert({
+  const { error } = await db.from('ai_usage_logs').insert({
     student_id: studentId,
     session_id: sessionId,
     operation,
@@ -98,7 +98,7 @@ function startOfMonth(): string {
 }
 
 async function sumCost(filter: { studentId?: string; sessionId?: string; since?: string }): Promise<number> {
-  let query = supabaseAdmin.from('ai_usage_logs').select('estimated_cost');
+  let query = db.from('ai_usage_logs').select('estimated_cost');
   if (filter.studentId) query = query.eq('student_id', filter.studentId);
   if (filter.sessionId) query = query.eq('session_id', filter.sessionId);
   if (filter.since) query = query.gte('created_at', filter.since);
@@ -108,7 +108,7 @@ async function sumCost(filter: { studentId?: string; sessionId?: string; since?:
 }
 
 async function weeklySessionCount(studentId: string): Promise<number> {
-  const { count, error } = await supabaseAdmin
+  const { count, error } = await db
     .from('embassy_sessions')
     .select('id', { count: 'exact', head: true })
     .eq('student_id', studentId)
@@ -120,12 +120,12 @@ async function weeklySessionCount(studentId: string): Promise<number> {
 
 async function loadProfileFacts(studentId: string): Promise<ProfileFacts | null> {
   const [profileResult, levelResult] = await Promise.all([
-    supabaseAdmin
+    db
       .from('student_profiles')
       .select('study_objective, desired_field, preferred_cities, institution_type_preference, financing_source, has_guarantor, budget_range, target_intake')
       .eq('student_id', studentId)
       .maybeSingle(),
-    supabaseAdmin.from('profiles').select('level').eq('id', studentId).single(),
+    db.from('profiles').select('level').eq('id', studentId).single(),
   ]);
   if (profileResult.error) throw profileResult.error;
   if (levelResult.error) throw levelResult.error;
@@ -139,7 +139,7 @@ export async function getEmbassyConfig(studentId: string) {
     weeklySessionCount(studentId),
     sumCost({ studentId, since: startOfMonth() }),
     listScenarios(true),
-    supabaseAdmin.from('student_profiles').select('student_id').eq('student_id', studentId).maybeSingle(),
+    db.from('student_profiles').select('student_id').eq('student_id', studentId).maybeSingle(),
   ]);
   if (profile.error) throw profile.error;
   return {
@@ -154,14 +154,14 @@ export async function getEmbassyConfig(studentId: string) {
 }
 
 async function loadOwnedSession(studentId: string, sessionId: string): Promise<SessionRow> {
-  const { data, error } = await supabaseAdmin.from('embassy_sessions').select(SESSION_COLUMNS).eq('id', sessionId).eq('student_id', studentId).maybeSingle();
+  const { data, error } = await db.from('embassy_sessions').select(SESSION_COLUMNS).eq('id', sessionId).eq('student_id', studentId).maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(404, 'embassy_session_not_found', 'Entretien introuvable.');
   return data as SessionRow;
 }
 
 async function loadMessages(sessionId: string): Promise<MessageRow[]> {
-  const { data, error } = await supabaseAdmin.from('embassy_messages').select(MESSAGE_COLUMNS).eq('session_id', sessionId).order('sequence_number');
+  const { data, error } = await db.from('embassy_messages').select(MESSAGE_COLUMNS).eq('session_id', sessionId).order('sequence_number');
   if (error) throw error;
   return data as MessageRow[];
 }
@@ -176,7 +176,7 @@ function conversationContext(session: SessionRow, scenario: Scenario | null): Co
 }
 
 async function failSession(sessionId: string, reason: string) {
-  const { error } = await supabaseAdmin
+  const { error } = await db
     .from('embassy_sessions')
     .update({ status: 'failed', ended_at: new Date().toISOString(), failure_reason: reason })
     .eq('id', sessionId)
@@ -185,7 +185,7 @@ async function failSession(sessionId: string, reason: string) {
 }
 
 async function insertAgentMessage(sessionId: string, sequenceNumber: number, text: string, apiContent: StoredApiContent) {
-  const { error } = await supabaseAdmin.from('embassy_messages').insert({
+  const { error } = await db.from('embassy_messages').insert({
     session_id: sessionId,
     speaker: 'agent',
     sequence_number: sequenceNumber,
@@ -239,7 +239,7 @@ export async function getEmbassySessionForStaff(studentId: string, sessionId: st
 
 export async function listEmbassySessions(studentId: string) {
   const [result, labels] = await Promise.all([
-    supabaseAdmin
+    db
       .from('embassy_sessions')
       .select('id, visa_type, scenario_code, input_mode, status, turn_count, max_turns, started_at, completed_at, overall_score, uses_profile, ai_report->>level, ai_report->inconsistencies')
       .eq('student_id', studentId)
@@ -266,7 +266,7 @@ export async function listEmbassySessions(studentId: string) {
 
 export async function getEmbassyProgress(studentId: string) {
   const [result, labels] = await Promise.all([
-    supabaseAdmin
+    db
       .from('embassy_sessions')
       .select('id, visa_type, scenario_code, completed_at, overall_score, ai_report')
       .eq('student_id', studentId)
@@ -293,7 +293,7 @@ export async function startEmbassySession(studentId: string, input: { visaType: 
     throw new HttpError(503, 'ai_unavailable', "L'agent ambassade n'est pas encore configuré. Contactez le centre.");
   }
 
-  const { data: active, error: activeError } = await supabaseAdmin.from('embassy_sessions').select('id').eq('student_id', studentId).eq('status', 'in_progress').maybeSingle();
+  const { data: active, error: activeError } = await db.from('embassy_sessions').select('id').eq('student_id', studentId).eq('status', 'in_progress').maybeSingle();
   if (activeError) throw activeError;
   if (active) throw new HttpError(409, 'embassy_session_in_progress', 'Un entretien est déjà en cours.', { sessionId: active.id });
 
@@ -315,7 +315,7 @@ export async function startEmbassySession(studentId: string, input: { visaType: 
   const profileFacts = input.useProfile ? await loadProfileFacts(studentId) : null;
   if (input.useProfile && !profileFacts) throw new HttpError(400, 'profile_required', 'Complétez d’abord votre profil pour activer la détection des incohérences.');
 
-  const { data: created, error: insertError } = await supabaseAdmin
+  const { data: created, error: insertError } = await db
     .from('embassy_sessions')
     .insert({
       student_id: studentId,
@@ -382,7 +382,7 @@ export async function sendStudentMessage(studentId: string, sessionId: string, i
     api_content: null,
     created_at: new Date().toISOString(),
   };
-  const { error: insertError } = await supabaseAdmin.from('embassy_messages').insert({
+  const { error: insertError } = await db.from('embassy_messages').insert({
     session_id: session.id,
     speaker: 'student',
     sequence_number: studentMessage.sequence_number,
@@ -393,7 +393,7 @@ export async function sendStudentMessage(studentId: string, sessionId: string, i
   if (insertError) throw insertError;
 
   const turnCount = answered + 1;
-  const { error: countError } = await supabaseAdmin.from('embassy_sessions').update({ turn_count: turnCount }).eq('id', session.id);
+  const { error: countError } = await db.from('embassy_sessions').update({ turn_count: turnCount }).eq('id', session.id);
   if (countError) throw countError;
 
   let turn;
@@ -421,7 +421,7 @@ export async function sendStudentMessage(studentId: string, sessionId: string, i
 
 async function closeSession(sessionId: string, studentAnswers: number, costLimitReached = false): Promise<SessionStatus> {
   const status: SessionStatus = studentAnswers >= MIN_STUDENT_ANSWERS_FOR_REPORT ? 'report_pending' : 'abandoned';
-  const { error } = await supabaseAdmin
+  const { error } = await db
     .from('embassy_sessions')
     .update({ status, ended_at: new Date().toISOString(), ...(costLimitReached && { cost_limit_reached: true }) })
     .eq('id', sessionId)
@@ -446,7 +446,7 @@ export async function endEmbassySession(studentId: string, sessionId: string) {
 // EF-58 : l'étudiant supprime la session, son transcript et son rapport.
 export async function deleteEmbassySession(studentId: string, sessionId: string) {
   const session = await loadOwnedSession(studentId, sessionId);
-  const { error } = await supabaseAdmin.from('embassy_sessions').delete().eq('id', session.id).eq('student_id', studentId);
+  const { error } = await db.from('embassy_sessions').delete().eq('id', session.id).eq('student_id', studentId);
   if (error) throw error;
   await recordAudit({ actorId: studentId, action: 'embassy_session.delete', entityType: 'embassy_session', entityId: session.id });
 }
@@ -458,7 +458,7 @@ export async function deleteEmbassySession(studentId: string, sessionId: string)
 // §10.6 : faits clés du dernier entretien terminé, pour repérer les réponses qui changent d'une session à l'autre.
 async function previousKeyFacts(session: SessionRow): Promise<KeyFacts | null> {
   if (!session.uses_profile) return null;
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('embassy_sessions')
     .select('ai_report->key_facts')
     .eq('student_id', session.student_id)
@@ -473,19 +473,19 @@ async function previousKeyFacts(session: SessionRow): Promise<KeyFacts | null> {
 }
 
 export async function processReport(sessionId: string): Promise<void> {
-  const { data: current, error: loadError } = await supabaseAdmin.from('embassy_sessions').select(SESSION_COLUMNS).eq('id', sessionId).eq('status', 'report_pending').maybeSingle();
+  const { data: current, error: loadError } = await db.from('embassy_sessions').select(SESSION_COLUMNS).eq('id', sessionId).eq('status', 'report_pending').maybeSingle();
   if (loadError) throw loadError;
   if (!current) return;
   const session = current as SessionRow;
   if (session.report_claimed_at && Date.now() - Date.parse(session.report_claimed_at) < REPORT_CLAIM_TIMEOUT_MS) return;
 
   if (session.report_attempts >= MAX_REPORT_ATTEMPTS) {
-    await supabaseAdmin.from('embassy_sessions').update({ status: 'failed', failure_reason: 'report_generation_failed' }).eq('id', session.id).eq('status', 'report_pending');
+    await db.from('embassy_sessions').update({ status: 'failed', failure_reason: 'report_generation_failed' }).eq('id', session.id).eq('status', 'report_pending');
     return;
   }
 
   // Réservation atomique : une seule génération à la fois pour une session.
-  const { data: claimed, error: claimError } = await supabaseAdmin
+  const { data: claimed, error: claimError } = await db
     .from('embassy_sessions')
     .update({ report_attempts: session.report_attempts + 1, report_claimed_at: new Date().toISOString() })
     .eq('id', session.id)
@@ -511,7 +511,7 @@ export async function processReport(sessionId: string): Promise<void> {
     await recordUsage(session.student_id, session.id, 'embassy_report', usage);
 
     const finalReport = finalizeReport(report, { promptVersion: session.prompt_version, model: usage.model, usesProfile: session.uses_profile });
-    const { error } = await supabaseAdmin
+    const { error } = await db
       .from('embassy_sessions')
       .update({ status: 'completed', completed_at: new Date().toISOString(), overall_score: finalReport.overall_score, ai_report: finalReport, report_claimed_at: null })
       .eq('id', session.id)
@@ -527,12 +527,12 @@ export async function processReport(sessionId: string): Promise<void> {
   } catch (err) {
     logger.error({ err: err instanceof Error ? err.message : err, sessionId: session.id, attempt: session.report_attempts + 1 }, 'embassy_report_failed');
     // Libère la réservation : la prochaine passe du balayage retentera.
-    await supabaseAdmin.from('embassy_sessions').update({ report_claimed_at: null }).eq('id', session.id).eq('status', 'report_pending');
+    await db.from('embassy_sessions').update({ report_claimed_at: null }).eq('id', session.id).eq('status', 'report_pending');
   }
 }
 
 export async function sweepPendingReports(): Promise<void> {
-  const { data, error } = await supabaseAdmin.from('embassy_sessions').select('id').eq('status', 'report_pending').limit(20);
+  const { data, error } = await db.from('embassy_sessions').select('id').eq('status', 'report_pending').limit(20);
   if (error) throw error;
   for (const row of data as { id: string }[]) await processReport(row.id);
 }

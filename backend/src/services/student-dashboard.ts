@@ -1,5 +1,5 @@
 // §16.1 : indicateurs du tableau de bord étudiant — scores, entretiens, documents, prochaines échéances.
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import type { AuthContext } from '../middleware/auth.js';
 import { listClassSessions } from './calendar.js';
 import { getStudentDocumentsSpace } from './documents.js';
@@ -98,7 +98,7 @@ interface EmbassyRow {
 export async function getStudentDashboard(auth: AuthContext, now = new Date()) {
   const studentId = auth.userId;
   const [simulations, embassy, documents, sessions] = await Promise.all([
-    supabaseAdmin
+    db
       .from('simulations')
       .select('completed_at, total_questions, score_by_section, test_templates(name)')
       .eq('student_id', studentId)
@@ -107,7 +107,7 @@ export async function getStudentDashboard(auth: AuthContext, now = new Date()) {
       .not('completed_at', 'is', null)
       .order('completed_at', { ascending: false })
       .limit(100),
-    supabaseAdmin
+    db
       .from('embassy_sessions')
       .select('completed_at, overall_score, ai_report')
       .eq('student_id', studentId)

@@ -1,9 +1,10 @@
-import type { Session } from '@supabase/supabase-js';
+import type { User } from 'firebase/auth';
 import { createContext, useContext } from 'react';
 import type { Me } from '../lib/types';
 
 export interface AuthContextValue {
-  session: Session | null;
+  // Utilisateur Firebase connecté (null : aucune session).
+  session: User | null;
   me: Me | null;
   loading: boolean;
   notice: string | null;

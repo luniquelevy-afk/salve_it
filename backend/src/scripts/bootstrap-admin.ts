@@ -1,7 +1,7 @@
 // Création du tout premier compte admin (aucune auto-inscription possible, EF-01).
 // Usage : pnpm --filter @salve/backend bootstrap:admin --email admin@centre.cg --name "Prénom Nom"
 import { parseArgs } from 'node:util';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import { createAccount } from '../services/accounts.js';
 
 const { values } = parseArgs({
@@ -14,7 +14,7 @@ if (!values.email || !values.name) {
   process.exit(1);
 }
 
-const { count, error } = await supabaseAdmin.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'admin');
+const { count, error } = await db.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'admin');
 if (error) throw error;
 if ((count ?? 0) > 0) {
   console.error('Un compte admin existe déjà : créez les autres comptes depuis le back-office.');

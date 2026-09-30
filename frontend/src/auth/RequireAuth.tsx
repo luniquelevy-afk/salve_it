@@ -3,7 +3,7 @@ import { FullPageMessage } from '../components/FullPageMessage';
 import { homeFor, type AppRole } from '../lib/types';
 import { useAuth } from './auth-context';
 
-// Garde d'interface uniquement : l'autorisation réelle est appliquée par l'API et la RLS.
+// Garde d'interface uniquement : l'autorisation réelle est appliquée par l'API (Firestore est fermé aux clients).
 export function RequireAuth({ roles }: { roles?: AppRole[] }) {
   const { session, me, loading, notice, refreshMe } = useAuth();
   const location = useLocation();

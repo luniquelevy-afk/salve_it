@@ -2,7 +2,9 @@ import { useState, type FormEvent } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../auth/auth-context';
 import { Logo } from '../../components/Logo';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { api, ApiError } from '../../lib/api';
+import { auth, authErrorCode } from '../../lib/firebase';
 import { homeFor } from '../../lib/types';
 
 function validate(password: string, confirmation: string): string | null {
@@ -30,9 +32,21 @@ export function ChangePasswordPage() {
     setError(null);
     try {
       await api('/api/me/password', { method: 'POST', body: { password } });
-      await refreshMe();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Impossible de changer le mot de passe.');
+      setSubmitting(false);
+      return;
+    }
+    // Firebase révoque les sessions à chaque changement de mot de passe : reconnexion immédiate.
+    try {
+      if (me) await signInWithEmailAndPassword(auth, me.email, password);
+      await refreshMe();
+    } catch (err) {
+      await signOut(
+        authErrorCode(err) === 'auth/multi-factor-auth-required'
+          ? 'Mot de passe enregistré. Reconnectez-vous avec votre code de vérification.'
+          : 'Mot de passe enregistré. Reconnectez-vous.',
+      );
     } finally {
       setSubmitting(false);
     }

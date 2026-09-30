@@ -1,5 +1,5 @@
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import type { CefrLevel } from './access.js';
 import { getStudentDocumentsSpace } from './documents.js';
 import { buildLearningPath, computeReadiness, startOfWeek, type EmbassyDimension, type PathSnapshot } from './learning-plan.js';
@@ -67,7 +67,7 @@ function toProfile(row: ProfileRow | null) {
 }
 
 async function loadProfileRow(studentId: string): Promise<ProfileRow | null> {
-  const { data, error } = await supabaseAdmin.from('student_profiles').select(PROFILE_COLUMNS).eq('student_id', studentId).maybeSingle();
+  const { data, error } = await db.from('student_profiles').select(PROFILE_COLUMNS).eq('student_id', studentId).maybeSingle();
   if (error) throw error;
   return data as unknown as ProfileRow | null;
 }
@@ -78,12 +78,12 @@ export async function getStudentProfile(studentId: string) {
 
 export async function saveStudentProfile(studentId: string, input: StudentProfileInput) {
   if (input.targetTemplateId) {
-    const { data, error } = await supabaseAdmin.from('test_templates').select('id').eq('id', input.targetTemplateId).eq('is_active', true).maybeSingle();
+    const { data, error } = await db.from('test_templates').select('id').eq('id', input.targetTemplateId).eq('is_active', true).maybeSingle();
     if (error) throw error;
     if (!data) throw new HttpError(400, 'template_not_found', 'Modèle de test introuvable.');
   }
 
-  const { error } = await supabaseAdmin.from('student_profiles').upsert(
+  const { error } = await db.from('student_profiles').upsert(
     {
       student_id: studentId,
       current_education_level: input.currentEducationLevel ?? null,
@@ -132,15 +132,15 @@ interface EmbassyRow {
 async function loadActivity(studentId: string) {
   const since60Days = new Date(Date.now() - 60 * 86_400_000).toISOString();
   const [levelResult, simulationsResult, exercisesResult, embassyResult] = await Promise.all([
-    supabaseAdmin.from('profiles').select('level').eq('id', studentId).single(),
-    supabaseAdmin
+    db.from('profiles').select('level').eq('id', studentId).single(),
+    db
       .from('simulations')
       .select('mode, status, started_at, completed_at, total_questions, test_template_id, score_by_section')
       .eq('student_id', studentId)
       .order('started_at', { ascending: false })
       .limit(100),
-    supabaseAdmin.from('exercise_attempts').select('score, max_score, created_at').eq('student_id', studentId).gte('created_at', since60Days),
-    supabaseAdmin
+    db.from('exercise_attempts').select('score, max_score, created_at').eq('student_id', studentId).gte('created_at', since60Days),
+    db
       .from('embassy_sessions')
       .select('status, started_at, completed_at, overall_score, ai_report')
       .eq('student_id', studentId)
@@ -240,7 +240,7 @@ export async function getLearningPath(studentId: string, now = new Date()) {
   const path = buildLearningPath(snapshot, now);
 
   // Instantané conservé pour le suivi enseignant (§19.4).
-  const { error } = await supabaseAdmin.from('learning_paths').upsert(
+  const { error } = await db.from('learning_paths').upsert(
     {
       student_id: studentId,
       objective: path.objective,

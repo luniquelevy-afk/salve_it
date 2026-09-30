@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 if (!['production', 'test'].includes(process.env.NODE_ENV ?? '')) {
   try {
-    process.loadEnvFile();
+    // ENV_FILE : autre fichier ponctuellement (ex. .env.production pour migrer la base de production).
+    process.loadEnvFile(process.env.ENV_FILE ?? '.env');
   } catch {
     // Pas de .env local : les variables viennent de l'environnement.
   }
@@ -24,8 +25,12 @@ const schema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     PORT: z.coerce.number().int().positive().default(3001),
-    SUPABASE_URL: z.url(),
-    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+    // ── Firebase (Firestore, Auth, Storage) ──
+    FIREBASE_PROJECT_ID: z.string().trim().min(1),
+    // Compte de service (JSON brut ou encodé en base64) : backend uniquement, jamais exposé (CDC §18).
+    // Absent en local : les émulateurs (FIRESTORE_EMULATOR_HOST…) n'en ont pas besoin.
+    FIREBASE_SERVICE_ACCOUNT: optionalSecret,
+    FIREBASE_STORAGE_BUCKET: optionalSecret,
     CORS_ORIGINS: z
       .string()
       .default('http://localhost:5173')
@@ -45,7 +50,7 @@ const schema = z
     ANTHROPIC_API_KEY: optionalSecret,
 
     // ── Notifications (§15) ──
-    // Absent : les emails restent en file avec le statut « skipped ». En local : smtp://127.0.0.1:54325 (Mailpit).
+    // Absent : les emails restent en file avec le statut « skipped » (cas local, sans serveur SMTP).
     SMTP_URL: optionalSecret,
     EMAIL_FROM: z.string().trim().min(3).default('Salve Italia <no-reply@salve-italia.local>'),
     // Base des liens envoyés par email.
@@ -60,6 +65,15 @@ const schema = z
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV !== 'production') return;
+    for (const variable of ['FIRESTORE_EMULATOR_HOST', 'FIREBASE_AUTH_EMULATOR_HOST', 'FIREBASE_STORAGE_EMULATOR_HOST']) {
+      if (process.env[variable]) {
+        ctx.addIssue({ code: 'custom', path: [variable], message: 'Les émulateurs Firebase sont interdits en production.' });
+      }
+    }
+    // Signature des URL de téléchargement (documents) : exige la clé privée du compte de service.
+    if (!value.FIREBASE_SERVICE_ACCOUNT && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      ctx.addIssue({ code: 'custom', path: ['FIREBASE_SERVICE_ACCOUNT'], message: 'Compte de service Firebase requis en production.' });
+    }
     if (value.AI_PROVIDER === 'fake') {
       ctx.addIssue({ code: 'custom', path: ['AI_PROVIDER'], message: "L'agent factice est interdit en production." });
     }

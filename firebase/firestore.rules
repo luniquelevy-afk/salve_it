@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// Salve Italia — aucun accès client direct à Firestore.
+// Toutes les lectures et écritures passent par le backend (SDK Admin, qui ignore ces règles),
+// où rôle, statut du compte, MFA admin et périmètre enseignant sont vérifiés à chaque requête
+// (middleware/auth.ts, services/access.ts). Le frontend n'utilise Firebase que pour l'authentification.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

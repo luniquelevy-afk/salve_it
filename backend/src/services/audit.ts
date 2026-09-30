@@ -1,5 +1,5 @@
 import { logger } from '../lib/logger.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 
 export interface AuditEntry {
   actorId: string | null;
@@ -11,7 +11,7 @@ export interface AuditEntry {
 
 // ENF-08 : toute action admin sensible est horodatée et attribuée.
 export async function recordAudit(entry: AuditEntry): Promise<void> {
-  const { error } = await supabaseAdmin.from('audit_logs').insert({
+  const { error } = await db.from('audit_logs').insert({
     actor_id: entry.actorId,
     action: entry.action,
     entity_type: entry.entityType,

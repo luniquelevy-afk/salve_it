@@ -1,7 +1,7 @@
 // Limites d'usage de l'IA (EF-22, EF-59, ENF-07) : configuration serveur < réglages admin < exception par étudiant.
 import { env } from '../config/env.js';
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import { activeModel, activeProviderName } from './ai.js';
 import { recordAudit } from './audit.js';
 
@@ -67,7 +67,7 @@ function settingsValues(row: SettingsRow): Nullable<LimitValues> {
 }
 
 async function loadSettings(): Promise<SettingsRow> {
-  const { data, error } = await supabaseAdmin.from('ai_settings').select('max_turns, weekly_session_limit, monthly_cost_limit_usd, session_cost_limit_usd, updated_at').eq('id', true).single();
+  const { data, error } = await db.from('ai_settings').select('max_turns, weekly_session_limit, monthly_cost_limit_usd, session_cost_limit_usd, updated_at').eq('id', true).single();
   if (error) throw error;
   return data as SettingsRow;
 }
@@ -75,7 +75,7 @@ async function loadSettings(): Promise<SettingsRow> {
 export async function getEffectiveLimits(studentId: string): Promise<EffectiveLimits> {
   const [settings, studentResult] = await Promise.all([
     loadSettings(),
-    supabaseAdmin.from('student_ai_limits').select('weekly_session_limit, monthly_cost_limit_usd').eq('student_id', studentId).maybeSingle(),
+    db.from('student_ai_limits').select('weekly_session_limit, monthly_cost_limit_usd').eq('student_id', studentId).maybeSingle(),
   ]);
   if (studentResult.error) throw studentResult.error;
   const student = studentResult.data as { weekly_session_limit: number | null; monthly_cost_limit_usd: number | string | null } | null;
@@ -103,7 +103,7 @@ export async function getAiSettings() {
 }
 
 export async function updateAiSettings(actorId: string, input: Nullable<LimitValues>) {
-  const { error } = await supabaseAdmin
+  const { error } = await db
     .from('ai_settings')
     .update({
       max_turns: input.maxTurns ?? null,
@@ -128,10 +128,10 @@ export async function listStudentAiUsage() {
   const monthStart = startOfMonth();
   const weekStart = new Date(Date.now() - 7 * 86_400_000).toISOString();
   const [students, usage, sessions, overrides, settings] = await Promise.all([
-    supabaseAdmin.from('profiles').select('id, full_name, level').eq('role', 'student').eq('status', 'active').order('full_name'),
-    supabaseAdmin.from('ai_usage_logs').select('student_id, estimated_cost').gte('created_at', monthStart).not('student_id', 'is', null),
-    supabaseAdmin.from('embassy_sessions').select('student_id, started_at, status, cost_limit_reached').gte('started_at', monthStart),
-    supabaseAdmin.from('student_ai_limits').select('student_id, weekly_session_limit, monthly_cost_limit_usd, note'),
+    db.from('profiles').select('id, full_name, level').eq('role', 'student').eq('status', 'active').order('full_name'),
+    db.from('ai_usage_logs').select('student_id, estimated_cost').gte('created_at', monthStart).not('student_id', 'is', null),
+    db.from('embassy_sessions').select('student_id, started_at, status, cost_limit_reached').gte('started_at', monthStart),
+    db.from('student_ai_limits').select('student_id, weekly_session_limit, monthly_cost_limit_usd, note'),
     loadSettings(),
   ]);
   for (const result of [students, usage, sessions, overrides]) if (result.error) throw result.error;
@@ -165,15 +165,15 @@ export async function listStudentAiUsage() {
 }
 
 export async function setStudentAiLimits(actorId: string, studentId: string, input: { weeklySessionLimit: number | null; monthlyCostLimitUsd: number | null; note?: string | null | undefined }) {
-  const { data: student, error: studentError } = await supabaseAdmin.from('profiles').select('role').eq('id', studentId).maybeSingle();
+  const { data: student, error: studentError } = await db.from('profiles').select('role').eq('id', studentId).maybeSingle();
   if (studentError) throw studentError;
   if (student?.role !== 'student') throw new HttpError(404, 'student_not_found', 'Étudiant introuvable.');
 
   if (input.weeklySessionLimit === null && input.monthlyCostLimitUsd === null) {
-    const { error } = await supabaseAdmin.from('student_ai_limits').delete().eq('student_id', studentId);
+    const { error } = await db.from('student_ai_limits').delete().eq('student_id', studentId);
     if (error) throw error;
   } else {
-    const { error } = await supabaseAdmin.from('student_ai_limits').upsert(
+    const { error } = await db.from('student_ai_limits').upsert(
       {
         student_id: studentId,
         weekly_session_limit: input.weeklySessionLimit,

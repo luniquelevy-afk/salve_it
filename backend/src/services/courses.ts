@@ -1,5 +1,5 @@
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import type { AuthContext } from '../middleware/auth.js';
 import { assertCanManageClass, classIdsForStudent, classScopeFilter, studentLevel, type CefrLevel } from './access.js';
 import { recordAudit } from './audit.js';
@@ -63,7 +63,7 @@ export async function listStudentCourses(studentId: string, filters: { level?: C
   // Par défaut : cours du niveau de l'étudiant ; « all » affiche tous les niveaux.
   const effectiveLevel = filters.level === 'all' ? null : (filters.level ?? level);
 
-  let query = supabaseAdmin.from('courses').select(COURSE_COLUMNS).eq('is_published', true).or(classScopeFilter(classIds));
+  let query = db.from('courses').select(COURSE_COLUMNS).eq('is_published', true).or(classScopeFilter(classIds));
   if (effectiveLevel) query = query.eq('level', effectiveLevel);
   if (filters.category) query = query.eq('category', filters.category);
   const { data, error } = await query.order('level').order('title');
@@ -74,7 +74,7 @@ export async function listStudentCourses(studentId: string, filters: { level?: C
 
 export async function getStudentCourse(studentId: string, courseId: string) {
   const classIds = await classIdsForStudent(studentId);
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('courses')
     .select(COURSE_COLUMNS)
     .eq('id', courseId)
@@ -84,7 +84,7 @@ export async function getStudentCourse(studentId: string, courseId: string) {
   if (error) throw error;
   if (!data) throw new HttpError(404, 'course_not_found', 'Cours introuvable.');
 
-  const { data: exercises, error: exercisesError } = await supabaseAdmin
+  const { data: exercises, error: exercisesError } = await db
     .from('exercises')
     .select('id, title, exercise_type')
     .eq('course_id', courseId)
@@ -109,13 +109,13 @@ function canEdit(auth: AuthContext, row: Pick<CourseRow, 'created_by'>): boolean
 }
 
 export async function listManagedCourses(auth: AuthContext) {
-  const { data, error } = await supabaseAdmin.from('courses').select(COURSE_COLUMNS).order('updated_at', { ascending: false }).limit(500);
+  const { data, error } = await db.from('courses').select(COURSE_COLUMNS).order('updated_at', { ascending: false }).limit(500);
   if (error) throw error;
   return (data as CourseRow[]).map((row) => ({ ...toCourse(row), canEdit: canEdit(auth, row) }));
 }
 
 async function getEditableCourse(auth: AuthContext, id: string): Promise<CourseRow> {
-  const { data, error } = await supabaseAdmin.from('courses').select(COURSE_COLUMNS).eq('id', id).maybeSingle();
+  const { data, error } = await db.from('courses').select(COURSE_COLUMNS).eq('id', id).maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(404, 'course_not_found', 'Cours introuvable.');
   if (!canEdit(auth, data as CourseRow)) throw new HttpError(403, 'course_forbidden', 'Seul l’auteur ou un admin peut modifier ce cours.');
@@ -139,7 +139,7 @@ function toRow(input: CourseInput, current?: CourseRow) {
 
 export async function createCourse(auth: AuthContext, input: CourseInput) {
   if (input.classId) await assertCanManageClass(auth, input.classId);
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('courses')
     .insert({ ...toRow(input), created_by: auth.userId })
     .select(COURSE_COLUMNS)
@@ -152,7 +152,7 @@ export async function createCourse(auth: AuthContext, input: CourseInput) {
 export async function updateCourse(auth: AuthContext, id: string, input: CourseInput) {
   const current = await getEditableCourse(auth, id);
   if (input.classId && input.classId !== current.class_id) await assertCanManageClass(auth, input.classId);
-  const { data, error } = await supabaseAdmin.from('courses').update(toRow(input, current)).eq('id', id).select(COURSE_COLUMNS).single();
+  const { data, error } = await db.from('courses').update(toRow(input, current)).eq('id', id).select(COURSE_COLUMNS).single();
   if (error) throw error;
   await recordAudit({ actorId: auth.userId, action: 'course.update', entityType: 'course', entityId: id });
   return { ...toCourse(data as CourseRow), canEdit: true };
@@ -160,7 +160,7 @@ export async function updateCourse(auth: AuthContext, id: string, input: CourseI
 
 export async function deleteCourse(auth: AuthContext, id: string) {
   await getEditableCourse(auth, id);
-  const { error } = await supabaseAdmin.from('courses').delete().eq('id', id);
+  const { error } = await db.from('courses').delete().eq('id', id);
   if (error) throw error;
   await recordAudit({ actorId: auth.userId, action: 'course.delete', entityType: 'course', entityId: id });
 }

@@ -1,6 +1,6 @@
 // Modèles de test configurables (§7, EF-42) — barème et sections versionnés (§19.11).
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import { recordAudit } from './audit.js';
 
 export interface TemplateInput {
@@ -33,9 +33,9 @@ const COLUMNS =
 
 export async function listTemplatesForAdmin() {
   const [templatesResult, questionsResult, usageResult] = await Promise.all([
-    supabaseAdmin.from('test_templates').select(COLUMNS).order('name'),
-    supabaseAdmin.from('questions').select('category').eq('validation_status', 'active'),
-    supabaseAdmin.from('simulations').select('test_template_id').not('test_template_id', 'is', null),
+    db.from('test_templates').select(COLUMNS).order('name'),
+    db.from('questions').select('category').eq('validation_status', 'active'),
+    db.from('simulations').select('test_template_id').not('test_template_id', 'is', null),
   ]);
   if (templatesResult.error) throw templatesResult.error;
   if (questionsResult.error) throw questionsResult.error;
@@ -90,9 +90,9 @@ function templateRow(input: TemplateInput) {
 }
 
 async function replaceSections(templateId: string, sections: TemplateInput['sections']) {
-  const { error: deleteError } = await supabaseAdmin.from('test_sections').delete().eq('template_id', templateId);
+  const { error: deleteError } = await db.from('test_sections').delete().eq('template_id', templateId);
   if (deleteError) throw deleteError;
-  const { error } = await supabaseAdmin.from('test_sections').insert(
+  const { error } = await db.from('test_sections').insert(
     sections.map((section, index) => ({
       template_id: templateId,
       name: section.name,
@@ -105,7 +105,7 @@ async function replaceSections(templateId: string, sections: TemplateInput['sect
 }
 
 export async function createTemplate(actorId: string, input: TemplateInput) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('test_templates')
     .insert({ ...templateRow(input), created_by: actorId })
     .select('id')
@@ -115,7 +115,7 @@ export async function createTemplate(actorId: string, input: TemplateInput) {
   try {
     await replaceSections(data.id as string, input.sections);
   } catch (err) {
-    await supabaseAdmin.from('test_templates').delete().eq('id', data.id);
+    await db.from('test_templates').delete().eq('id', data.id);
     throw err;
   }
   await recordAudit({ actorId, action: 'test_template.create', entityType: 'test_template', entityId: data.id });
@@ -124,12 +124,12 @@ export async function createTemplate(actorId: string, input: TemplateInput) {
 
 // Toute modification crée une nouvelle version ; les simulations passées gardent la leur.
 export async function updateTemplate(actorId: string, id: string, input: TemplateInput) {
-  const { data: current, error: loadError } = await supabaseAdmin.from('test_templates').select('version').eq('id', id).maybeSingle();
+  const { data: current, error: loadError } = await db.from('test_templates').select('version').eq('id', id).maybeSingle();
   if (loadError) throw loadError;
   if (!current) throw new HttpError(404, 'template_not_found', 'Modèle de test introuvable.');
 
   const nextVersion = (current.version as number) + 1;
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('test_templates')
     .update({ ...templateRow(input), version: nextVersion })
     .eq('id', id)

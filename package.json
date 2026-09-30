@@ -12,18 +12,20 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
-    "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,postgres-meta",
-    "db:stop": "supabase stop",
-    "db:reset": "supabase db reset",
-    "db:status": "supabase status"
+    "emulators": "firebase emulators:start --project demo-salve-italia",
+    "db:migrate": "pnpm --filter @salve/backend db:migrate",
+    "db:seed": "pnpm --filter @salve/backend db:seed",
+    "test:integration": "firebase emulators:exec --project demo-salve-italia --only auth,firestore,storage \"pnpm --filter @salve/backend test:integration\"",
+    "firebase:deploy": "firebase deploy --only firestore:rules,firestore:indexes,storage"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "eslint": "^10.10.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.6",
+    "firebase-tools": "^15.32.0",
     "globals": "^17.12.0",
-    "supabase": "^2.117.0",
     "typescript": "6.0.3",
     "typescript-eslint": "^8.70.0"
   }

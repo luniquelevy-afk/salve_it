@@ -1,5 +1,4 @@
 // Contrôles des fichiers déposés (checklist sécurité : documents étudiants).
-export const DOCUMENT_BUCKET = 'student-documents';
 export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 // Durée de validité des liens de téléchargement signés.
 export const SIGNED_URL_SECONDS = 60;

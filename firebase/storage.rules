@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// Documents étudiants : dépôt et suppression par le backend uniquement, lecture via URL signée
+// de 60 s émise après contrôle d'accès (services/documents.ts). Aucun accès client direct.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

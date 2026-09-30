@@ -38,10 +38,39 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      # Le test d'intégration RLS (RLS_TEST=1) exige un Supabase local : il se skippe
-      # ici automatiquement (describe.skipIf), les tests unitaires suffisent en CI.
       - name: Tests
         run: pnpm test
 
       - name: Build
         run: pnpm build
+
+  integration:
+    name: Intégration · émulateurs Firebase
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Les émulateurs Firestore et Storage tournent sur la JVM.
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Couche Firestore (contraintes, cascades, jointures), règles de sécurité et parcours API complet.
+      - name: Integration tests
+        run: pnpm test:integration

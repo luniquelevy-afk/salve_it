@@ -2,7 +2,7 @@
 // badges de progression. Aucun classement global public (§14). Les indicateurs sont
 // dérivés de l'activité existante ; seuls les badges obtenus sont persistés.
 import type { AuthContext } from '../middleware/auth.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import { getStudentDocumentsSpace } from './documents.js';
 
 const DAY_MS = 86_400_000;
@@ -128,9 +128,9 @@ export async function getStudentGamification(auth: AuthContext, now: Date = new 
   const since = new Date(now.getTime() - 60 * DAY_MS).toISOString(); // fenêtre suffisante pour une série de jours
 
   const [catalogue, awarded, simulations, interviews, exercises, documents] = await Promise.all([
-    supabaseAdmin.from('badges').select('code, label, description').eq('is_active', true).order('sort_order'),
-    supabaseAdmin.from('student_badges').select('badge_id, awarded_at, badges(code)').eq('student_id', studentId),
-    supabaseAdmin
+    db.from('badges').select('code, label, description').eq('is_active', true).order('sort_order'),
+    db.from('student_badges').select('badge_id, awarded_at, badges(code)').eq('student_id', studentId),
+    db
       .from('simulations')
       .select('completed_at, total_questions, score_by_section')
       .eq('student_id', studentId)
@@ -139,14 +139,14 @@ export async function getStudentGamification(auth: AuthContext, now: Date = new 
       .not('completed_at', 'is', null)
       .gte('completed_at', since)
       .limit(500),
-    supabaseAdmin
+    db
       .from('embassy_sessions')
       .select('completed_at')
       .eq('student_id', studentId)
       .eq('status', 'completed')
       .not('completed_at', 'is', null)
       .limit(500),
-    supabaseAdmin.from('exercise_attempts').select('created_at').eq('student_id', studentId).gte('created_at', since).limit(500),
+    db.from('exercise_attempts').select('created_at').eq('student_id', studentId).gte('created_at', since).limit(500),
     getStudentDocumentsSpace(studentId),
   ]);
   if (catalogue.error) throw catalogue.error;
@@ -208,7 +208,7 @@ async function persistNewlyEarned(
   const toAward = earnedCodes.filter((code) => !awardedAt.has(code));
   if (toAward.length === 0) return;
 
-  const { data: ids, error } = await supabaseAdmin.from('badges').select('id, code').in('code', toAward);
+  const { data: ids, error } = await db.from('badges').select('id, code').in('code', toAward);
   if (error) throw error;
 
   const awardedIso = now.toISOString();
@@ -219,7 +219,7 @@ async function persistNewlyEarned(
   }));
   if (rows.length === 0) return;
 
-  const { error: insertError } = await supabaseAdmin
+  const { error: insertError } = await db
     .from('student_badges')
     .upsert(rows, { onConflict: 'student_id,badge_id', ignoreDuplicates: true });
   if (insertError) throw insertError;

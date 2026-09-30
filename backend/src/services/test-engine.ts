@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { HttpError } from '../lib/http-error.js';
 import { logger } from '../lib/logger.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import { scoreAnswers, scoringRulesSchema, shuffle, type ScoringRules, type SectionTally } from './scoring.js';
 import { nextReviewState, reviewPriority, type QuestionStat } from './spaced-repetition.js';
 
@@ -110,7 +110,7 @@ interface TemplateRow {
 }
 
 export async function listActiveTemplates() {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('test_templates')
     .select('id, code, name, description, version, is_active, total_duration_seconds, test_sections(id, name, category, question_count, order_index)')
     .eq('is_active', true)
@@ -134,7 +134,7 @@ export async function listActiveTemplates() {
 }
 
 async function loadActiveTemplate(templateId: string): Promise<TemplateRow> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('test_templates')
     .select('id, code, name, description, version, is_active, total_duration_seconds, test_sections(id, name, category, question_count, order_index)')
     .eq('id', templateId)
@@ -177,7 +177,7 @@ function toStat(row: StatRow): QuestionStat {
 
 export async function updateQuestionStats(studentId: string, results: { questionId: string; correct: boolean }[], now = new Date()) {
   if (results.length === 0) return;
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('student_question_stats')
     .select(STAT_COLUMNS)
     .eq('student_id', studentId)
@@ -199,7 +199,7 @@ export async function updateQuestionStats(studentId: string, results: { question
       next_review_at: next.nextReviewAt,
     };
   });
-  const { error: upsertError } = await supabaseAdmin.from('student_question_stats').upsert(rows, { onConflict: 'student_id,question_id' });
+  const { error: upsertError } = await db.from('student_question_stats').upsert(rows, { onConflict: 'student_id,question_id' });
   if (upsertError) throw upsertError;
 }
 
@@ -209,7 +209,7 @@ interface TrackedQuestion extends QuestionStat {
 }
 
 async function loadTrackedQuestions(studentId: string): Promise<TrackedQuestion[]> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('student_question_stats')
     .select(`${STAT_COLUMNS}, questions!inner(category, validation_status)`)
     .eq('student_id', studentId)
@@ -224,7 +224,7 @@ async function loadTrackedQuestions(studentId: string): Promise<TrackedQuestion[
 
 // Poids de chaque catégorie dans le test visé par l'étudiant (profil).
 async function targetCategoryWeights(studentId: string): Promise<Map<string, number>> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('student_profiles')
     .select('test_templates(test_sections(category, question_count))')
     .eq('student_id', studentId)
@@ -286,7 +286,7 @@ interface DrawPlan {
 }
 
 async function activeQuestionIds(categories: string[]): Promise<{ id: string; category: string }[]> {
-  const { data, error } = await supabaseAdmin.from('questions').select('id, category').in('category', categories).eq('validation_status', 'active');
+  const { data, error } = await db.from('questions').select('id, category').in('category', categories).eq('validation_status', 'active');
   if (error) throw error;
   return data as { id: string; category: string }[];
 }
@@ -354,7 +354,7 @@ async function planRevision(studentId: string, now = new Date()): Promise<DrawPl
 // ─────────────────────────────────────────────────────────────
 
 async function loadOwnedSimulation(studentId: string, simulationId: string): Promise<SimulationRow> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('simulations')
     .select(SIMULATION_COLUMNS)
     .eq('id', simulationId)
@@ -366,7 +366,7 @@ async function loadOwnedSimulation(studentId: string, simulationId: string): Pro
 }
 
 async function loadQuestionAt(simulationId: string, position: number): Promise<DrawnQuestion> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('simulation_questions')
     .select(DRAWN_QUESTION_COLUMNS)
     .eq('simulation_id', simulationId)
@@ -378,7 +378,7 @@ async function loadQuestionAt(simulationId: string, position: number): Promise<D
 
 async function scoringRulesFor(simulation: SimulationRow): Promise<ScoringRules> {
   if (!simulation.test_template_id) return REVISION_RULES;
-  const { data, error } = await supabaseAdmin.from('test_templates').select('scoring_rules').eq('id', simulation.test_template_id).single();
+  const { data, error } = await db.from('test_templates').select('scoring_rules').eq('id', simulation.test_template_id).single();
   if (error) throw error;
   return scoringRulesSchema.parse(data.scoring_rules);
 }
@@ -390,8 +390,8 @@ function isExpired(simulation: SimulationRow, graceMs = 0): boolean {
 // Clôt la simulation : réponses manquantes enregistrées à blanc (EF-10), score calculé serveur.
 async function finalize(simulation: SimulationRow): Promise<SimulationRow> {
   const [drawnResult, answersResult, rules] = await Promise.all([
-    supabaseAdmin.from('simulation_questions').select('position, question_id, section_id, test_sections(name), questions(category)').eq('simulation_id', simulation.id),
-    supabaseAdmin.from('simulation_answers').select('position, answer_given, is_correct').eq('simulation_id', simulation.id),
+    db.from('simulation_questions').select('position, question_id, section_id, test_sections(name), questions(category)').eq('simulation_id', simulation.id),
+    db.from('simulation_answers').select('position, answer_given, is_correct').eq('simulation_id', simulation.id),
     scoringRulesFor(simulation),
   ]);
   if (drawnResult.error) throw drawnResult.error;
@@ -410,7 +410,7 @@ async function finalize(simulation: SimulationRow): Promise<SimulationRow> {
 
   const missing = drawn.filter((question) => !answers.has(question.position));
   if (missing.length > 0) {
-    const { error } = await supabaseAdmin.from('simulation_answers').upsert(
+    const { error } = await db.from('simulation_answers').upsert(
       missing.map((question) => ({
         simulation_id: simulation.id,
         position: question.position,
@@ -438,7 +438,7 @@ async function finalize(simulation: SimulationRow): Promise<SimulationRow> {
     rules,
   );
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('simulations')
     .update({
       status: 'completed',
@@ -472,7 +472,7 @@ async function settleIfExpired(simulation: SimulationRow): Promise<SimulationRow
 }
 
 export async function startSimulation(studentId: string, input: { mode: SimulationMode; templateId?: string | undefined }) {
-  const { data: existing, error: existingError } = await supabaseAdmin
+  const { data: existing, error: existingError } = await db
     .from('simulations')
     .select(SIMULATION_COLUMNS)
     .eq('student_id', studentId)
@@ -493,7 +493,7 @@ export async function startSimulation(studentId: string, input: { mode: Simulati
   }
 
   const startedAt = new Date();
-  const { data: simulation, error: insertError } = await supabaseAdmin
+  const { data: simulation, error: insertError } = await db
     .from('simulations')
     .insert({
       student_id: studentId,
@@ -509,11 +509,11 @@ export async function startSimulation(studentId: string, input: { mode: Simulati
   if (insertError?.code === '23505') throw new HttpError(409, 'simulation_in_progress', 'Une simulation est déjà en cours.');
   if (insertError) throw insertError;
 
-  const { error: drawError } = await supabaseAdmin
+  const { error: drawError } = await db
     .from('simulation_questions')
     .insert(plan.draw.map((item, position) => ({ simulation_id: simulation.id, position, question_id: item.questionId, section_id: item.sectionId })));
   if (drawError) {
-    await supabaseAdmin.from('simulations').delete().eq('id', simulation.id);
+    await db.from('simulations').delete().eq('id', simulation.id);
     throw drawError;
   }
 
@@ -560,7 +560,7 @@ export async function submitAnswer(studentId: string, simulationId: string, inpu
     throw new HttpError(400, 'invalid_answer', 'Réponse invalide.');
   }
 
-  const { data: lastAnswer, error: lastError } = await supabaseAdmin
+  const { data: lastAnswer, error: lastError } = await db
     .from('simulation_answers')
     .select('answered_at')
     .eq('simulation_id', simulation.id)
@@ -571,7 +571,7 @@ export async function submitAnswer(studentId: string, simulationId: string, inpu
   const since = Date.parse(lastAnswer?.answered_at ?? simulation.started_at);
   const isCorrect = input.answer !== null && input.answer === question.correctAnswer;
 
-  const { error: insertError } = await supabaseAdmin.from('simulation_answers').insert({
+  const { error: insertError } = await db.from('simulation_answers').insert({
     simulation_id: simulation.id,
     position: input.position,
     question_id: question.questionId,
@@ -583,7 +583,7 @@ export async function submitAnswer(studentId: string, simulationId: string, inpu
   if (insertError) throw insertError;
 
   const nextPosition = input.position + 1;
-  const { data: advanced, error: advanceError } = await supabaseAdmin
+  const { data: advanced, error: advanceError } = await db
     .from('simulations')
     .update({ current_position: nextPosition })
     .eq('id', simulation.id)
@@ -605,7 +605,7 @@ export async function submitAnswer(studentId: string, simulationId: string, inpu
 
 async function templateLabel(templateId: string | null) {
   if (!templateId) return REVISION_TEMPLATE;
-  const { data, error } = await supabaseAdmin.from('test_templates').select('name, code').eq('id', templateId).single();
+  const { data, error } = await db.from('test_templates').select('name, code').eq('id', templateId).single();
   if (error) throw error;
   return { name: data.name as string, code: data.code as string };
 }
@@ -617,13 +617,13 @@ export async function getSimulationResults(studentId: string, simulationId: stri
   }
 
   const [drawnResult, answersResult, template, rules, previousResult] = await Promise.all([
-    supabaseAdmin.from('simulation_questions').select(DRAWN_QUESTION_COLUMNS).eq('simulation_id', simulation.id).order('position'),
-    supabaseAdmin.from('simulation_answers').select('position, answer_given, is_correct, time_spent_seconds').eq('simulation_id', simulation.id),
+    db.from('simulation_questions').select(DRAWN_QUESTION_COLUMNS).eq('simulation_id', simulation.id).order('position'),
+    db.from('simulation_answers').select('position, answer_given, is_correct, time_spent_seconds').eq('simulation_id', simulation.id),
     templateLabel(simulation.test_template_id),
     scoringRulesFor(simulation),
     // EF-43 : comparaison avec la tentative précédente sur le même modèle et le même mode.
     simulation.test_template_id
-      ? supabaseAdmin
+      ? db
           .from('simulations')
           .select('id, score, completed_at, total_questions, score_by_section')
           .eq('student_id', studentId)
@@ -686,7 +686,7 @@ export async function getSimulationResults(studentId: string, simulationId: stri
 
 // Historique étudiant (EF-13), simulation en cours incluse pour permettre la reprise (EF-11).
 export async function listSimulations(studentId: string) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('simulations')
     .select(`${SIMULATION_COLUMNS}, test_templates(name, code)`)
     .eq('student_id', studentId)

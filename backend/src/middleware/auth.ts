@@ -1,7 +1,9 @@
 import type { Request, RequestHandler } from 'express';
+import type { DecodedIdToken } from 'firebase-admin/auth';
 import { env } from '../config/env.js';
+import { db } from '../lib/db/index.js';
+import { firebaseAuth } from '../lib/firebase.js';
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
 
 export type AppRole = 'student' | 'teacher' | 'admin';
 
@@ -21,17 +23,10 @@ declare global {
   }
 }
 
-// Appelé uniquement après auth.getUser(), qui a validé le jeton auprès de Supabase Auth :
-// les claims décodés sont donc authentiques.
-function readAal(jwt: string): AuthContext['aal'] {
-  const payload = jwt.split('.')[1];
-  if (!payload) return 'aal1';
-  try {
-    const claims = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as { aal?: string };
-    return claims.aal === 'aal2' ? 'aal2' : 'aal1';
-  } catch {
-    return 'aal1';
-  }
+// « aal2 » lorsque la connexion a validé un second facteur (claim posé par Firebase Auth
+// dans un jeton dont la signature vient d'être vérifiée).
+function readAal(claims: DecodedIdToken): AuthContext['aal'] {
+  return claims.firebase.sign_in_second_factor ? 'aal2' : 'aal1';
 }
 
 export function authOf(req: Request): AuthContext {
@@ -48,14 +43,22 @@ export const requireAuth: RequestHandler = async (req, _res, next) => {
   const token = header?.startsWith('Bearer ') ? header.slice('Bearer '.length) : undefined;
   if (!token) return next(new HttpError(401, 'unauthenticated', 'Authentification requise.'));
 
-  const { data, error } = await supabaseAdmin.auth.getUser(token);
-  if (error || !data.user) return next(new HttpError(401, 'unauthenticated', 'Session invalide ou expirée.'));
+  // checkRevoked : refuse aussi les jetons d'un compte désactivé ou dont les sessions ont été révoquées.
+  let claims: DecodedIdToken;
+  try {
+    claims = await firebaseAuth.verifyIdToken(token, true);
+  } catch (error) {
+    if ((error as { code?: string }).code === 'auth/user-disabled') {
+      return next(new HttpError(403, 'account_suspended', 'Ce compte est suspendu. Contactez le centre.'));
+    }
+    return next(new HttpError(401, 'unauthenticated', 'Session invalide ou expirée.'));
+  }
 
   // Rôle et statut lus en base à chaque requête, jamais depuis le client (EF-03, EF-04).
-  const { data: profile, error: profileError } = await supabaseAdmin
+  const { data: profile, error: profileError } = await db
     .from('profiles')
     .select('role, status, must_change_password')
-    .eq('id', data.user.id)
+    .eq('id', claims.uid)
     .single();
 
   if (profileError || !profile) return next(new HttpError(403, 'no_profile', 'Compte non configuré.'));
@@ -64,9 +67,9 @@ export const requireAuth: RequestHandler = async (req, _res, next) => {
   }
 
   req.auth = {
-    userId: data.user.id,
+    userId: claims.uid,
     role: profile.role as AppRole,
-    aal: readAal(token),
+    aal: readAal(claims),
     mustChangePassword: Boolean(profile.must_change_password),
   };
   next();

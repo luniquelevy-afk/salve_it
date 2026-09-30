@@ -1,6 +1,6 @@
 // Contenu public administrable du site vitrine (EF-30 à EF-34).
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import type { CefrLevel } from './access.js';
 import { recordAudit } from './audit.js';
 
@@ -55,13 +55,13 @@ function toSettings(row: Record<string, unknown>): SiteSettings & { updatedAt: s
 }
 
 export async function getSiteSettings() {
-  const { data, error } = await supabaseAdmin.from('site_settings').select(SETTINGS_COLUMNS).eq('id', true).single();
+  const { data, error } = await db.from('site_settings').select(SETTINGS_COLUMNS).eq('id', true).single();
   if (error) throw error;
   return toSettings(data);
 }
 
 export async function updateSiteSettings(actorId: string, input: SiteSettings) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('site_settings')
     .update({
       centre_name: input.centreName,
@@ -114,13 +114,13 @@ function toProgram(row: Record<string, unknown>) {
 export type PublicProgram = ReturnType<typeof toProgram>;
 
 export async function listProgramsWithPublicFields() {
-  const { data, error } = await supabaseAdmin.from('programs').select(PROGRAM_COLUMNS).order('display_order').order('name');
+  const { data, error } = await db.from('programs').select(PROGRAM_COLUMNS).order('display_order').order('name');
   if (error) throw error;
   return data.map(toProgram);
 }
 
 async function listPublicPrograms() {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('programs')
     .select(PROGRAM_COLUMNS)
     .eq('is_public', true)
@@ -132,7 +132,7 @@ async function listPublicPrograms() {
 }
 
 export async function getPublicProgram(slug: string) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('programs')
     .select(PROGRAM_COLUMNS)
     .eq('slug', slug)
@@ -162,14 +162,14 @@ export interface ProgramPublicInput {
 }
 
 export async function updateProgramPublic(actorId: string, programId: string, input: ProgramPublicInput) {
-  const { data: current, error: loadError } = await supabaseAdmin.from('programs').select('name').eq('id', programId).maybeSingle();
+  const { data: current, error: loadError } = await db.from('programs').select('name').eq('id', programId).maybeSingle();
   if (loadError) throw loadError;
   if (!current) throw new HttpError(404, 'program_not_found', 'Formation introuvable.');
 
   const slug = slugify(input.slug?.trim() || (current.name as string));
   if (input.isPublic && !slug) throw new HttpError(400, 'slug_required', 'Adresse de page invalide.');
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('programs')
     .update({
       slug: slug || null,
@@ -208,14 +208,14 @@ function collection<Item, Input>(definition: CollectionDefinition<Item, Input>) 
 
   return {
     async list(onlyPublished: boolean): Promise<Item[]> {
-      let query = supabaseAdmin.from(definition.table).select(definition.columns);
+      let query = db.from(definition.table).select(definition.columns);
       if (onlyPublished) query = query.eq('is_published', true);
       const { data, error } = await query.order('display_order').order('created_at');
       if (error) throw error;
       return (data as unknown as Record<string, unknown>[]).map(definition.fromRow);
     },
     async create(actorId: string, input: Input): Promise<Item> {
-      const { data, error } = await supabaseAdmin.from(definition.table).insert(definition.toRow(input)).select(definition.columns).single();
+      const { data, error } = await db.from(definition.table).insert(definition.toRow(input)).select(definition.columns).single();
       if (error?.code === '23514') throw new HttpError(400, 'invalid_content', 'Contenu invalide (consentement, lien https ou champ obligatoire).');
       if (error) throw error;
       const item = definition.fromRow(data as unknown as Record<string, unknown>);
@@ -223,7 +223,7 @@ function collection<Item, Input>(definition: CollectionDefinition<Item, Input>) 
       return item;
     },
     async update(actorId: string, id: string, input: Input): Promise<Item> {
-      const { data, error } = await supabaseAdmin.from(definition.table).update(definition.toRow(input)).eq('id', id).select(definition.columns).maybeSingle();
+      const { data, error } = await db.from(definition.table).update(definition.toRow(input)).eq('id', id).select(definition.columns).maybeSingle();
       if (error?.code === '23514') throw new HttpError(400, 'invalid_content', 'Contenu invalide (consentement, lien https ou champ obligatoire).');
       if (error) throw error;
       if (!data) throw notFound();
@@ -231,7 +231,7 @@ function collection<Item, Input>(definition: CollectionDefinition<Item, Input>) 
       return definition.fromRow(data as unknown as Record<string, unknown>);
     },
     async remove(actorId: string, id: string): Promise<void> {
-      const { data, error } = await supabaseAdmin.from(definition.table).delete().eq('id', id).select('id').maybeSingle();
+      const { data, error } = await db.from(definition.table).delete().eq('id', id).select('id').maybeSingle();
       if (error) throw error;
       if (!data) throw notFound();
       await recordAudit({ actorId, action: `${definition.entityType}.delete`, entityType: definition.entityType, entityId: id });

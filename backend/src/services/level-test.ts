@@ -1,5 +1,5 @@
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import { CEFR_LEVELS, type CefrLevel } from './access.js';
 import { createLead } from './leads.js';
 
@@ -33,7 +33,7 @@ export function estimateLevel(byLevel: Partial<Record<CefrLevel, LevelTally>>): 
 }
 
 async function loadQuestions(): Promise<LevelQuestionRow[]> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('level_test_questions')
     .select('id, level, question_text, options, correct_answer, order_index')
     .eq('is_active', true)
@@ -73,7 +73,7 @@ export async function submitLevelTest(answers: Record<string, string>, contact: 
   }
   const estimatedLevel = estimateLevel(byLevel);
 
-  const { error } = await supabaseAdmin.from('level_test_attempts').insert({
+  const { error } = await db.from('level_test_attempts').insert({
     answers,
     score,
     total: questions.length,
@@ -103,7 +103,7 @@ export async function submitLevelTest(answers: Record<string, string>, contact: 
 
 // Prospects issus du test (admin) — préfigure le CRM de la V1.2.
 export async function listLevelTestAttempts() {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('level_test_attempts')
     .select('id, score, total, estimated_level, full_name, email, phone, desired_program, contact_consent, created_at')
     .order('created_at', { ascending: false })

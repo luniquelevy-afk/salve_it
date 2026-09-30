@@ -23,11 +23,10 @@ services:
       - key: REQUIRE_ADMIN_MFA
         value: "true"
       # Secrets et valeurs propres à l'environnement — à renseigner dans le tableau de bord.
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: SUPABASE_ANON_KEY
+      - key: FIREBASE_PROJECT_ID
+        value: salve-italia
+      # Compte de service Firebase (JSON ou base64) : Firestore, Auth et URL signées Storage.
+      - key: FIREBASE_SERVICE_ACCOUNT
         sync: false
       - key: GEMINI_API_KEY
         sync: false

@@ -1,8 +1,10 @@
+import { multiFactor, TotpMultiFactorGenerator, type TotpSecret } from 'firebase/auth';
+import QRCode from 'qrcode';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../auth/auth-context';
 import { Logo } from '../../components/Logo';
-import { supabase } from '../../lib/supabase';
+import { auth, authErrorCode } from '../../lib/firebase';
 import { homeFor } from '../../lib/types';
 
 interface Enrollment {
@@ -10,10 +12,11 @@ interface Enrollment {
   secret: string;
 }
 
-// MFA TOTP obligatoire pour les admins (checklist sécurité) : enrôlement au premier passage, puis vérification.
+// MFA TOTP obligatoire pour les admins (checklist sécurité). Avec Firebase, le code d'un facteur déjà
+// actif est demandé à la connexion (LoginPage) : cette page sert à l'activation au premier passage.
 export function MfaPage() {
   const { me, refreshMe, signOut } = useAuth();
-  const [factorId, setFactorId] = useState<string | null>(null);
+  const [totpSecret, setTotpSecret] = useState<TotpSecret | null>(null);
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -25,38 +28,47 @@ export function MfaPage() {
     started.current = true;
 
     void (async () => {
-      const { data, error: listError } = await supabase.auth.mfa.listFactors();
-      if (listError) return setError('Impossible de charger la configuration MFA.');
-
-      const verified = data.totp.find((factor) => factor.status === 'verified');
-      if (verified) return setFactorId(verified.id);
-
-      // Nettoie un enrôlement abandonné lors d'une visite précédente.
-      for (const factor of data.all.filter((f) => f.factor_type === 'totp' && f.status === 'unverified')) {
-        await supabase.auth.mfa.unenroll({ factorId: factor.id });
+      const user = auth.currentUser;
+      if (!user) return;
+      // Facteur déjà actif mais session sans second facteur : la reconnexion demandera le code.
+      if (multiFactor(user).enrolledFactors.length > 0) {
+        return signOut('Reconnectez-vous et saisissez le code de votre application d’authentification.');
       }
-
-      const { data: enrolled, error: enrollError } = await supabase.auth.mfa.enroll({
-        factorType: 'totp',
-        friendlyName: 'Salve Italia',
-      });
-      if (enrollError) return setError('Impossible de démarrer l’activation de la MFA.');
-      setFactorId(enrolled.id);
-      setEnrollment({ qrCode: enrolled.totp.qr_code, secret: enrolled.totp.secret });
+      try {
+        const secret = await TotpMultiFactorGenerator.generateSecret(await multiFactor(user).getSession());
+        setTotpSecret(secret);
+        const uri = secret.generateQrCodeUrl(user.email ?? 'admin', 'Salve Italia');
+        setEnrollment({ qrCode: await QRCode.toDataURL(uri, { margin: 1, width: 176 }), secret: secret.secretKey });
+      } catch (err) {
+        if (authErrorCode(err) === 'auth/requires-recent-login') return signOut('Reconnectez-vous pour activer la vérification en deux étapes.');
+        setError(
+          import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_HOST
+            ? 'L’émulateur Firebase Auth ne gère pas la MFA TOTP : en local, passez REQUIRE_ADMIN_MFA=false dans backend/.env.'
+            : 'Impossible de démarrer l’activation de la MFA.',
+        );
+      }
     })();
-  }, [me?.mfaRequired]);
+  }, [me?.mfaRequired, signOut]);
 
   if (me && !me.mfaRequired) return <Navigate to={homeFor(me.role)} replace />;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!factorId) return;
+    const user = auth.currentUser;
+    if (!user || !totpSecret) return;
     setSubmitting(true);
     setError(null);
-    const { error: verifyError } = await supabase.auth.mfa.challengeAndVerify({ factorId, code: code.trim() });
-    if (verifyError) {
+    try {
+      await multiFactor(user).enroll(TotpMultiFactorGenerator.assertionForEnrollment(totpSecret, code.trim()), 'Salve Italia');
+    } catch {
       setError('Code invalide ou expiré. Réessayez.');
       setSubmitting(false);
+      return;
+    }
+    // Le jeton renouvelé porte normalement le second facteur ; sinon, une reconnexion avec le code suffit.
+    const token = await user.getIdTokenResult(true);
+    if (!token.signInSecondFactor) {
+      await signOut('Vérification en deux étapes activée. Reconnectez-vous avec le code de votre application.');
       return;
     }
     await refreshMe();
@@ -103,7 +115,7 @@ export function MfaPage() {
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
             />
           </div>
-          <button type="submit" className="btn-primary w-full" disabled={submitting || !factorId}>
+          <button type="submit" className="btn-primary w-full" disabled={submitting || !totpSecret}>
             {submitting ? 'Vérification…' : 'Vérifier'}
           </button>
           <button type="button" className="btn-secondary w-full" onClick={() => void signOut()}>

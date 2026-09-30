@@ -1,6 +1,6 @@
 // Scénarios d'entretien (§10.2, EF-54) — administrables sans redéploiement (ENF-10).
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import { recordAudit } from './audit.js';
 import type { VisaType } from './embassy-prompts.js';
 
@@ -31,7 +31,7 @@ function toScenario(row: Record<string, unknown>): Scenario {
 }
 
 export async function listScenarios(onlyActive: boolean): Promise<Scenario[]> {
-  let query = supabaseAdmin.from('embassy_scenarios').select(COLUMNS);
+  let query = db.from('embassy_scenarios').select(COLUMNS);
   if (onlyActive) query = query.eq('is_active', true);
   const { data, error } = await query.order('display_order');
   if (error) throw error;
@@ -39,7 +39,7 @@ export async function listScenarios(onlyActive: boolean): Promise<Scenario[]> {
 }
 
 export async function getScenario(code: string): Promise<Scenario | null> {
-  const { data, error } = await supabaseAdmin.from('embassy_scenarios').select(COLUMNS).eq('code', code).maybeSingle();
+  const { data, error } = await db.from('embassy_scenarios').select(COLUMNS).eq('code', code).maybeSingle();
   if (error) throw error;
   return data ? toScenario(data) : null;
 }
@@ -61,7 +61,7 @@ function toRow(input: ScenarioInput, actorId: string) {
 }
 
 export async function createScenario(actorId: string, input: ScenarioInput) {
-  const { data, error } = await supabaseAdmin.from('embassy_scenarios').insert(toRow(input, actorId)).select(COLUMNS).single();
+  const { data, error } = await db.from('embassy_scenarios').insert(toRow(input, actorId)).select(COLUMNS).single();
   if (error?.code === '23505') throw new HttpError(409, 'scenario_code_taken', 'Ce code de scénario existe déjà.');
   if (error) throw error;
   await recordAudit({ actorId, action: 'embassy_scenario.create', entityType: 'embassy_scenario', metadata: { code: input.code } });
@@ -70,7 +70,7 @@ export async function createScenario(actorId: string, input: ScenarioInput) {
 
 export async function updateScenario(actorId: string, code: string, input: ScenarioInput) {
   if (code === 'standard' && !input.isActive) throw new HttpError(400, 'scenario_required', 'Le scénario classique ne peut pas être désactivé.');
-  const { data, error } = await supabaseAdmin.from('embassy_scenarios').update(toRow({ ...input, code }, actorId)).eq('code', code).select(COLUMNS).maybeSingle();
+  const { data, error } = await db.from('embassy_scenarios').update(toRow({ ...input, code }, actorId)).eq('code', code).select(COLUMNS).maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(404, 'scenario_not_found', 'Scénario introuvable.');
   await recordAudit({ actorId, action: 'embassy_scenario.update', entityType: 'embassy_scenario', metadata: { code } });

@@ -1,6 +1,7 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { firebaseAuth } from '../lib/firebase.js';
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import type { AppRole } from '../middleware/auth.js';
 import { recordAudit } from './audit.js';
 
@@ -33,8 +34,7 @@ interface ProfileRow {
 
 const PROFILE_COLUMNS = 'id, email, role, full_name, phone, level, status, must_change_password, created_at';
 
-// Durée de bannissement Supabase Auth équivalente à « indéfiniment ».
-const BAN_INDEFINITELY = '876000h';
+const authErrorCode = (error: unknown) => (error as { code?: string } | null)?.code;
 
 function toAccount(row: ProfileRow): Account {
   return {
@@ -67,21 +67,21 @@ export async function createAccount(input: CreateAccountInput, actorId: string |
   const email = input.email.trim().toLowerCase();
   const temporaryPassword = generateTemporaryPassword();
 
-  const { data, error } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password: temporaryPassword,
-    email_confirm: true,
-    app_metadata: { role: input.role },
-  });
-  if (error?.code === 'email_exists') {
-    throw new HttpError(409, 'email_exists', 'Un compte existe déjà avec cet email.');
+  let uid: string;
+  try {
+    // uid UUID explicite : les identifiants de comptes restent des UUID dans toute l'API.
+    ({ uid } = await firebaseAuth.createUser({ uid: randomUUID(), email, password: temporaryPassword, emailVerified: true }));
+  } catch (error) {
+    if (authErrorCode(error) === 'auth/email-already-exists') {
+      throw new HttpError(409, 'email_exists', 'Un compte existe déjà avec cet email.');
+    }
+    throw error;
   }
-  if (error || !data.user) throw error ?? new Error('createUser: aucun utilisateur retourné');
 
-  const { data: row, error: insertError } = await supabaseAdmin
+  const { data: row, error: insertError } = await db
     .from('profiles')
     .insert({
-      id: data.user.id,
+      id: uid,
       email,
       role: input.role,
       full_name: input.fullName,
@@ -94,7 +94,7 @@ export async function createAccount(input: CreateAccountInput, actorId: string |
 
   if (insertError || !row) {
     // Pas de compte Auth orphelin sans profil.
-    await supabaseAdmin.auth.admin.deleteUser(data.user.id);
+    await firebaseAuth.deleteUser(uid);
     throw insertError ?? new Error('insert profile: aucune ligne retournée');
   }
 
@@ -104,7 +104,7 @@ export async function createAccount(input: CreateAccountInput, actorId: string |
 }
 
 export async function listAccounts(role?: AppRole): Promise<Account[]> {
-  let query = supabaseAdmin.from('profiles').select(PROFILE_COLUMNS).order('created_at', { ascending: false });
+  let query = db.from('profiles').select(PROFILE_COLUMNS).order('created_at', { ascending: false });
   if (role) query = query.eq('role', role);
   const { data, error } = await query;
   if (error) throw error;
@@ -112,7 +112,7 @@ export async function listAccounts(role?: AppRole): Promise<Account[]> {
 }
 
 export async function getAccount(id: string): Promise<Account> {
-  const { data, error } = await supabaseAdmin.from('profiles').select(PROFILE_COLUMNS).eq('id', id).maybeSingle();
+  const { data, error } = await db.from('profiles').select(PROFILE_COLUMNS).eq('id', id).maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(404, 'account_not_found', 'Compte introuvable.');
   return toAccount(data as ProfileRow);
@@ -136,7 +136,7 @@ export async function updateAccount(id: string, patch: UpdateAccountInput, actor
   if (patch.level !== undefined) changes.level = patch.level;
   if (Object.keys(changes).length === 0) return current;
 
-  const { data, error } = await supabaseAdmin.from('profiles').update(changes).eq('id', id).select(PROFILE_COLUMNS).single();
+  const { data, error } = await db.from('profiles').update(changes).eq('id', id).select(PROFILE_COLUMNS).single();
   if (error) throw error;
   await recordAudit({ actorId, action: 'account.update', entityType: 'profile', entityId: id, metadata: { fields: Object.keys(changes) } });
   return toAccount(data as ProfileRow);
@@ -146,15 +146,13 @@ export async function setAccountStatus(id: string, status: AccountStatus, actorI
   if (id === actorId) throw new HttpError(400, 'cannot_change_own_status', 'Vous ne pouvez pas modifier le statut de votre propre compte.');
   await getAccount(id);
 
-  // Profil d'abord : la RLS et le middleware coupent l'accès immédiatement (EF-03),
-  // puis le bannissement Auth empêche toute nouvelle connexion ou rafraîchissement de session.
-  const { data, error } = await supabaseAdmin.from('profiles').update({ status }).eq('id', id).select(PROFILE_COLUMNS).single();
+  // Profil d'abord : le middleware coupe l'accès immédiatement (EF-03),
+  // puis la désactivation Auth empêche toute nouvelle connexion et révoque les sessions en cours.
+  const { data, error } = await db.from('profiles').update({ status }).eq('id', id).select(PROFILE_COLUMNS).single();
   if (error) throw error;
 
-  const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(id, {
-    ban_duration: status === 'suspended' ? BAN_INDEFINITELY : 'none',
-  });
-  if (banError) throw banError;
+  await firebaseAuth.updateUser(id, { disabled: status === 'suspended' });
+  if (status === 'suspended') await firebaseAuth.revokeRefreshTokens(id);
 
   await recordAudit({ actorId, action: status === 'suspended' ? 'account.suspend' : 'account.reactivate', entityType: 'profile', entityId: id });
   return toAccount(data as ProfileRow);
@@ -164,10 +162,9 @@ export async function resetTemporaryPassword(id: string, actorId: string) {
   await getAccount(id);
   const temporaryPassword = generateTemporaryPassword();
 
-  const { error } = await supabaseAdmin.auth.admin.updateUserById(id, { password: temporaryPassword });
-  if (error) throw error;
+  await firebaseAuth.updateUser(id, { password: temporaryPassword });
 
-  const { data, error: updateError } = await supabaseAdmin
+  const { data, error: updateError } = await db
     .from('profiles')
     .update({ must_change_password: true })
     .eq('id', id)
@@ -180,13 +177,15 @@ export async function resetTemporaryPassword(id: string, actorId: string) {
 }
 
 export async function completePasswordChange(userId: string, password: string): Promise<void> {
-  const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password });
-  if (error?.code === 'weak_password') {
-    throw new HttpError(400, 'weak_password', 'Mot de passe trop faible.');
+  // Firebase révoque les sessions à chaque changement de mot de passe : le frontend se reconnecte ensuite.
+  try {
+    await firebaseAuth.updateUser(userId, { password });
+  } catch (error) {
+    if (authErrorCode(error) === 'auth/invalid-password') throw new HttpError(400, 'weak_password', 'Mot de passe trop faible.');
+    throw error;
   }
-  if (error) throw error;
 
-  const { error: updateError } = await supabaseAdmin.from('profiles').update({ must_change_password: false }).eq('id', userId);
+  const { error: updateError } = await db.from('profiles').update({ must_change_password: false }).eq('id', userId);
   if (updateError) throw updateError;
 
   await recordAudit({ actorId: userId, action: 'account.password_changed', entityType: 'profile', entityId: userId });

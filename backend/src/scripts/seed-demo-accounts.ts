@@ -7,7 +7,9 @@
 //
 // Usage : pnpm --filter @salve/backend demo:seed
 // ⚠️ Refusé si NODE_ENV=production : mots de passe faibles, jamais en prod (ENF/CDC §18).
-import { supabaseAdmin } from '../lib/supabase.js';
+import { randomUUID } from 'node:crypto';
+import { db } from '../lib/db/index.js';
+import { firebaseAuth } from '../lib/firebase.js';
 import type { AppRole } from '../middleware/auth.js';
 import type { CefrLevel } from '../services/accounts.js';
 
@@ -25,8 +27,7 @@ interface DemoAccount {
 }
 
 // Un compte par rôle. Même mot de passe pour simplifier la démo.
-// ≥ 10 caractères, lettres + chiffres (cf. supabase/config.toml : minimum_password_length,
-// password_requirements = letters_digits).
+// ≥ 10 caractères, lettres + chiffres (même politique que passwordSchema, routes/me.ts).
 const DEMO_PASSWORD = 'DemoSalve2026';
 const DEMO_ACCOUNTS: DemoAccount[] = [
   { email: 'admin.demo@salve.test', password: DEMO_PASSWORD, fullName: 'Admin Démo', role: 'admin' },
@@ -34,15 +35,12 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
   { email: 'etudiant.demo@salve.test', password: DEMO_PASSWORD, fullName: 'Étudiant Démo', role: 'student', level: 'A2' },
 ];
 
-// Pas de getUserByEmail dans l'API admin : on parcourt les pages de listUsers.
 async function findAuthUserId(email: string): Promise<string | null> {
-  const perPage = 200;
-  for (let page = 1; ; page += 1) {
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
-    if (error) throw error;
-    const found = data.users.find((user) => user.email?.toLowerCase() === email);
-    if (found) return found.id;
-    if (data.users.length < perPage) return null;
+  try {
+    return (await firebaseAuth.getUserByEmail(email)).uid;
+  } catch (error) {
+    if ((error as { code?: string }).code === 'auth/user-not-found') return null;
+    throw error;
   }
 }
 
@@ -53,30 +51,17 @@ async function upsertDemoAccount(account: DemoAccount): Promise<'created' | 'upd
   let userId: string;
   let outcome: 'created' | 'updated';
   if (existingId) {
-    // Réaligne mot de passe, confirmation email, rôle, et lève un éventuel bannissement.
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(existingId, {
-      password: account.password,
-      email_confirm: true,
-      ban_duration: 'none',
-      app_metadata: { role: account.role },
-    });
-    if (error) throw error;
+    // Réaligne mot de passe et vérification de l'email, et réactive un éventuel compte désactivé.
+    await firebaseAuth.updateUser(existingId, { password: account.password, emailVerified: true, disabled: false });
     userId = existingId;
     outcome = 'updated';
   } else {
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password: account.password,
-      email_confirm: true,
-      app_metadata: { role: account.role },
-    });
-    if (error || !data.user) throw error ?? new Error('createUser : aucun utilisateur retourné');
-    userId = data.user.id;
+    userId = (await firebaseAuth.createUser({ uid: randomUUID(), email, password: account.password, emailVerified: true })).uid;
     outcome = 'created';
   }
 
   // Profil prêt à l'emploi : actif, sans changement de mot de passe forcé.
-  const { error: profileError } = await supabaseAdmin.from('profiles').upsert(
+  const { error: profileError } = await db.from('profiles').upsert(
     {
       id: userId,
       email,

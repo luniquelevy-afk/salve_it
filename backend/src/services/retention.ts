@@ -2,9 +2,9 @@
 // Chaque durée est fixée par l'admin ; null = aucune suppression automatique (cadre légal à valider, CDC §22.7).
 // Jamais purgés : journal d'audit (ENF-08), coûts IA (sans contenu), comptes et résultats de tests.
 import { logger } from '../lib/logger.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
+import { removeDocumentFiles } from '../lib/document-storage.js';
 import { recordAudit } from './audit.js';
-import { DOCUMENT_BUCKET } from './document-files.js';
 
 export const RETENTION_RULES = [
   {
@@ -88,7 +88,7 @@ export function supersededVersions(rows: VersionRow[]): VersionRow[] {
 }
 
 async function loadSettings(): Promise<SettingsRow> {
-  const { data, error } = await supabaseAdmin.from('retention_settings').select(SETTINGS_COLUMNS).eq('id', true).single();
+  const { data, error } = await db.from('retention_settings').select(SETTINGS_COLUMNS).eq('id', true).single();
   if (error) throw error;
   return data as SettingsRow;
 }
@@ -105,10 +105,7 @@ async function exactCount(query: PromiseLike<{ count: number | null; error: unkn
 
 async function removeFiles(paths: string[]) {
   const unique = [...new Set(paths)];
-  for (let index = 0; index < unique.length; index += 100) {
-    const { error } = await supabaseAdmin.storage.from(DOCUMENT_BUCKET).remove(unique.slice(index, index + 100));
-    if (error) throw error;
-  }
+  for (let index = 0; index < unique.length; index += 100) await removeDocumentFiles(unique.slice(index, index + 100));
 }
 
 // ── Entretiens ──────────────────────────────────────────────
@@ -116,14 +113,14 @@ async function removeFiles(paths: string[]) {
 async function deleteEmbassySessions(ids: string[]): Promise<number> {
   if (ids.length === 0) return 0;
   // Pas de clé étrangère sur teacher_feedback.target_id : les commentaires liés partent avec l'entretien.
-  const { error: feedbackError } = await supabaseAdmin.from('teacher_feedback').delete().eq('target_type', 'embassy_session').in('target_id', ids);
+  const { error: feedbackError } = await db.from('teacher_feedback').delete().eq('target_type', 'embassy_session').in('target_id', ids);
   if (feedbackError) throw feedbackError;
-  const { error } = await supabaseAdmin.from('embassy_sessions').delete().in('id', ids);
+  const { error } = await db.from('embassy_sessions').delete().in('id', ids);
   if (error) throw error;
   return ids.length;
 }
 
-const finishedSessions = (cutoff: string) => supabaseAdmin.from('embassy_sessions').select('id', { count: 'exact' }).lt('started_at', cutoff).not('status', 'in', '(in_progress,report_pending)');
+const finishedSessions = (cutoff: string) => db.from('embassy_sessions').select('id', { count: 'exact' }).lt('started_at', cutoff).not('status', 'in', '(in_progress,report_pending)');
 
 async function purgeEmbassySessions(cutoff: string): Promise<number> {
   let total = 0;
@@ -140,14 +137,14 @@ async function purgeEmbassySessions(cutoff: string): Promise<number> {
 // ── Comptes étudiants suspendus ─────────────────────────────
 
 async function suspendedStudentsWithData(cutoff: string): Promise<string[]> {
-  const { data, error } = await supabaseAdmin.from('profiles').select('id').eq('role', 'student').eq('status', 'suspended').lt('suspended_at', cutoff).limit(BATCH);
+  const { data, error } = await db.from('profiles').select('id').eq('role', 'student').eq('status', 'suspended').lt('suspended_at', cutoff).limit(BATCH);
   if (error) throw error;
   const ids = (data as { id: string }[]).map((row) => row.id);
   if (ids.length === 0) return [];
 
   // Seuls les étudiants ayant encore des données sensibles sont concernés (purge idempotente).
   const results = await Promise.all(
-    (['student_documents', 'embassy_sessions', 'student_profiles'] as const).map((table) => supabaseAdmin.from(table).select('student_id').in('student_id', ids)),
+    (['student_documents', 'embassy_sessions', 'student_profiles'] as const).map((table) => db.from(table).select('student_id').in('student_id', ids)),
   );
   const withData = new Set<string>();
   for (const result of results) {
@@ -161,24 +158,24 @@ async function purgeSuspendedStudents(cutoff: string): Promise<number> {
   const ids = await suspendedStudentsWithData(cutoff);
   if (ids.length === 0) return 0;
 
-  const { data: documents, error: documentsError } = await supabaseAdmin.from('student_documents').select('id, storage_path').in('student_id', ids);
+  const { data: documents, error: documentsError } = await db.from('student_documents').select('id, storage_path').in('student_id', ids);
   if (documentsError) throw documentsError;
   const documentRows = documents as { id: string; storage_path: string }[];
   if (documentRows.length > 0) {
     const documentIds = documentRows.map((row) => row.id);
-    const { data: versions, error: versionsError } = await supabaseAdmin.from('student_document_versions').select('storage_path').in('document_id', documentIds);
+    const { data: versions, error: versionsError } = await db.from('student_document_versions').select('storage_path').in('document_id', documentIds);
     if (versionsError) throw versionsError;
     // Fichiers d'abord : jamais de ligne supprimée en laissant son fichier dans le stockage.
     await removeFiles([...documentRows.map((row) => row.storage_path), ...(versions as { storage_path: string }[]).map((row) => row.storage_path)]);
-    const { error } = await supabaseAdmin.from('student_documents').delete().in('id', documentIds);
+    const { error } = await db.from('student_documents').delete().in('id', documentIds);
     if (error) throw error;
   }
 
-  const { data: sessions, error: sessionsError } = await supabaseAdmin.from('embassy_sessions').select('id').in('student_id', ids);
+  const { data: sessions, error: sessionsError } = await db.from('embassy_sessions').select('id').in('student_id', ids);
   if (sessionsError) throw sessionsError;
   await deleteEmbassySessions((sessions as { id: string }[]).map((row) => row.id));
 
-  const { error: profileError } = await supabaseAdmin.from('student_profiles').delete().in('student_id', ids);
+  const { error: profileError } = await db.from('student_profiles').delete().in('student_id', ids);
   if (profileError) throw profileError;
   return ids.length;
 }
@@ -186,7 +183,7 @@ async function purgeSuspendedStudents(cutoff: string): Promise<number> {
 // ── Anciennes versions de documents ─────────────────────────
 
 async function oldVersions(cutoff: string): Promise<VersionRow[]> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('student_document_versions')
     .select('id, version, storage_path, student_documents!inner(current_version, storage_path)')
     .lt('uploaded_at', cutoff)
@@ -201,7 +198,7 @@ async function purgeDocumentVersions(cutoff: string): Promise<number> {
   await removeFiles(versions.map((row) => row.storage_path));
   const ids = versions.map((row) => row.id);
   for (let index = 0; index < ids.length; index += BATCH) {
-    const { error } = await supabaseAdmin.from('student_document_versions').delete().in('id', ids.slice(index, index + BATCH));
+    const { error } = await db.from('student_document_versions').delete().in('id', ids.slice(index, index + BATCH));
     if (error) throw error;
   }
   return versions.length;
@@ -210,10 +207,10 @@ async function purgeDocumentVersions(cutoff: string): Promise<number> {
 // ── Prospects et test de niveau ─────────────────────────────
 
 async function purgeLeads(cutoff: string): Promise<number> {
-  const { count: leads, error } = await supabaseAdmin.from('leads').delete({ count: 'exact' }).lt('updated_at', cutoff);
+  const { count: leads, error } = await db.from('leads').delete({ count: 'exact' }).lt('updated_at', cutoff);
   if (error) throw error;
   // Le score reste utile aux statistiques ; les coordonnées disparaissent.
-  const { count: attempts, error: attemptsError } = await supabaseAdmin
+  const { count: attempts, error: attemptsError } = await db
     .from('level_test_attempts')
     .update({ full_name: null, email: null, phone: null, desired_program: null, contact_consent: false }, { count: 'exact' })
     .eq('contact_consent', true)
@@ -225,9 +222,9 @@ async function purgeLeads(cutoff: string): Promise<number> {
 // ── Notifications ───────────────────────────────────────────
 
 async function purgeNotifications(cutoff: string): Promise<number> {
-  const { count: notifications, error } = await supabaseAdmin.from('notifications').delete({ count: 'exact' }).not('read_at', 'is', null).lt('created_at', cutoff);
+  const { count: notifications, error } = await db.from('notifications').delete({ count: 'exact' }).not('read_at', 'is', null).lt('created_at', cutoff);
   if (error) throw error;
-  const { count: emails, error: emailsError } = await supabaseAdmin.from('email_outbox').delete({ count: 'exact' }).neq('status', 'pending').lt('created_at', cutoff);
+  const { count: emails, error: emailsError } = await db.from('email_outbox').delete({ count: 'exact' }).neq('status', 'pending').lt('created_at', cutoff);
   if (emailsError) throw emailsError;
   return (notifications ?? 0) + (emails ?? 0);
 }
@@ -246,15 +243,15 @@ const PREVIEWS: Record<RetentionKey, (cutoff: string) => Promise<number>> = {
   documentVersionsMonths: async (cutoff) => (await oldVersions(cutoff)).length,
   leadsMonths: async (cutoff) => {
     const [leads, attempts] = await Promise.all([
-      exactCount(supabaseAdmin.from('leads').select('id', { count: 'exact', head: true }).lt('updated_at', cutoff)),
-      exactCount(supabaseAdmin.from('level_test_attempts').select('id', { count: 'exact', head: true }).eq('contact_consent', true).lt('created_at', cutoff)),
+      exactCount(db.from('leads').select('id', { count: 'exact', head: true }).lt('updated_at', cutoff)),
+      exactCount(db.from('level_test_attempts').select('id', { count: 'exact', head: true }).eq('contact_consent', true).lt('created_at', cutoff)),
     ]);
     return leads + attempts;
   },
   notificationsMonths: async (cutoff) => {
     const [notifications, emails] = await Promise.all([
-      exactCount(supabaseAdmin.from('notifications').select('id', { count: 'exact', head: true }).not('read_at', 'is', null).lt('created_at', cutoff)),
-      exactCount(supabaseAdmin.from('email_outbox').select('id', { count: 'exact', head: true }).neq('status', 'pending').lt('created_at', cutoff)),
+      exactCount(db.from('notifications').select('id', { count: 'exact', head: true }).not('read_at', 'is', null).lt('created_at', cutoff)),
+      exactCount(db.from('email_outbox').select('id', { count: 'exact', head: true }).neq('status', 'pending').lt('created_at', cutoff)),
     ]);
     return notifications + emails;
   },
@@ -283,7 +280,7 @@ export async function getRetentionSettings() {
 }
 
 export async function updateRetentionSettings(actorId: string, values: RetentionValues) {
-  const { error } = await supabaseAdmin
+  const { error } = await db
     .from('retention_settings')
     .update({
       ...Object.fromEntries(RETENTION_RULES.map((rule) => [rule.column, values[rule.key]])),
@@ -323,7 +320,7 @@ export async function runRetention(actorId: string | null, now = new Date()): Pr
   }
 
   const run: RetentionRun = { ranAt: now.toISOString(), trigger: actorId ? 'manuel' : 'automatique', rules };
-  const { error } = await supabaseAdmin.from('retention_settings').update({ last_run_at: run.ranAt, last_run_result: run }).eq('id', true);
+  const { error } = await db.from('retention_settings').update({ last_run_at: run.ranAt, last_run_result: run }).eq('id', true);
   if (error) logger.error({ err: error }, 'retention_run_record_failed');
   await recordAudit({ actorId, action: 'retention.purge', entityType: 'retention_settings', metadata: { ...run } });
   return run;

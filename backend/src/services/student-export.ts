@@ -1,7 +1,7 @@
 // EF-38 : export des données d'un étudiant pour l'admin — CSV des résultats (tableur) et JSON complet.
 // Format à valider avec le client (CDC §22.6) ; aucun fichier déposé n'est inclus, seulement leurs métadonnées.
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import { recordAudit } from './audit.js';
 import { getStudentProfile } from './student-profile.js';
 
@@ -135,7 +135,7 @@ export function fileSlug(name: string): string {
 // ── Chargement ──────────────────────────────────────────────
 
 async function loadStudentData(studentId: string) {
-  const { data: account, error: accountError } = await supabaseAdmin
+  const { data: account, error: accountError } = await db
     .from('profiles')
     .select('id, email, role, full_name, phone, level, status, created_at')
     .eq('id', studentId)
@@ -145,22 +145,22 @@ async function loadStudentData(studentId: string) {
 
   const [profile, simulations, sessions, documents, scenarios] = await Promise.all([
     getStudentProfile(studentId),
-    supabaseAdmin
+    db
       .from('simulations')
       .select('id, mode, status, started_at, completed_at, total_questions, score, score_by_section, test_templates(code, name)')
       .eq('student_id', studentId)
       .order('started_at'),
-    supabaseAdmin
+    db
       .from('embassy_sessions')
       .select('id, visa_type, scenario_code, input_mode, status, started_at, completed_at, turn_count, overall_score, uses_profile, prompt_version, model, ai_report')
       .eq('student_id', studentId)
       .order('started_at'),
-    supabaseAdmin
+    db
       .from('student_documents')
       .select('document_type, status, current_version, file_name, expires_at, reviewer_comment, reviewed_at, created_at, updated_at, document_types(label)')
       .eq('student_id', studentId)
       .order('document_type'),
-    supabaseAdmin.from('embassy_scenarios').select('code, label'),
+    db.from('embassy_scenarios').select('code, label'),
   ]);
   for (const result of [simulations, sessions, documents, scenarios]) if (result.error) throw result.error;
 
@@ -178,7 +178,7 @@ async function loadTranscripts(sessionIds: string[]) {
   const transcripts = new Map<string, { sequenceNumber: number; speaker: string; text: string; createdAt: string }[]>();
   if (sessionIds.length === 0) return transcripts;
   // api_content (contenu brut du fournisseur IA) n'est jamais exporté.
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('embassy_messages')
     .select('session_id, sequence_number, speaker, text_content, created_at')
     .in('session_id', sessionIds)

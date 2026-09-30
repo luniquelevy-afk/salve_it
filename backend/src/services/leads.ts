@@ -1,6 +1,6 @@
 // Prospects (EF-32, EF-60 à EF-63).
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import type { CefrLevel } from './access.js';
 import { recordAudit } from './audit.js';
 
@@ -22,7 +22,7 @@ export interface NewLead {
 
 // Appelé uniquement après consentement explicite de la personne.
 export async function createLead(lead: NewLead): Promise<void> {
-  const { error } = await supabaseAdmin.from('leads').insert({
+  const { error } = await db.from('leads').insert({
     full_name: lead.fullName,
     phone: lead.phone || null,
     email: lead.email || null,
@@ -59,12 +59,12 @@ function toLead(row: Record<string, unknown>) {
 }
 
 async function logInteraction(leadId: string, actorId: string, kind: InteractionKind, summary: string) {
-  const { error } = await supabaseAdmin.from('lead_interactions').insert({ lead_id: leadId, actor_id: actorId, kind, summary });
+  const { error } = await db.from('lead_interactions').insert({ lead_id: leadId, actor_id: actorId, kind, summary });
   if (error) throw error;
 }
 
 export async function listLeads(filters: { status?: LeadStatus | undefined; assignedTo?: string | undefined }) {
-  let query = supabaseAdmin.from('leads').select(LEAD_COLUMNS).order('created_at', { ascending: false }).limit(500);
+  let query = db.from('leads').select(LEAD_COLUMNS).order('created_at', { ascending: false }).limit(500);
   if (filters.status) query = query.eq('status', filters.status);
   if (filters.assignedTo) query = query.eq('assigned_to', filters.assignedTo);
   const { data, error } = await query;
@@ -73,7 +73,7 @@ export async function listLeads(filters: { status?: LeadStatus | undefined; assi
 }
 
 async function loadLead(id: string) {
-  const { data, error } = await supabaseAdmin.from('leads').select(LEAD_COLUMNS).eq('id', id).maybeSingle();
+  const { data, error } = await db.from('leads').select(LEAD_COLUMNS).eq('id', id).maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(404, 'lead_not_found', 'Prospect introuvable.');
   return toLead(data as unknown as Record<string, unknown>);
@@ -85,7 +85,7 @@ export async function updateLead(
   patch: { status?: LeadStatus | undefined; notes?: string | null | undefined; nextFollowUpAt?: string | null | undefined },
 ) {
   const current = await loadLead(id);
-  const { error } = await supabaseAdmin
+  const { error } = await db
     .from('leads')
     .update({
       ...(patch.status !== undefined && { status: patch.status }),
@@ -116,7 +116,7 @@ export async function assignLead(actorId: string, id: string, assigneeId: string
   const current = await loadLead(id);
   let assigneeName: string | null = null;
   if (assigneeId) {
-    const { data, error } = await supabaseAdmin.from('profiles').select('full_name, role, status').eq('id', assigneeId).maybeSingle();
+    const { data, error } = await db.from('profiles').select('full_name, role, status').eq('id', assigneeId).maybeSingle();
     if (error) throw error;
     if (!data || data.status !== 'active' || !['admin', 'teacher'].includes(data.role as string)) {
       throw new HttpError(400, 'assignee_invalid', 'Le responsable doit être un membre actif de l’équipe.');
@@ -124,7 +124,7 @@ export async function assignLead(actorId: string, id: string, assigneeId: string
     assigneeName = data.full_name as string;
   }
 
-  const { error } = await supabaseAdmin.from('leads').update({ assigned_to: assigneeId }).eq('id', id);
+  const { error } = await db.from('leads').update({ assigned_to: assigneeId }).eq('id', id);
   if (error) throw error;
   if ((current.assignedTo?.id ?? null) !== assigneeId) {
     await logInteraction(id, actorId, 'assignation', assigneeName ? `Affecté à ${assigneeName}` : 'Affectation retirée');
@@ -140,7 +140,7 @@ export async function addLeadInteraction(actorId: string, id: string, input: { k
 }
 
 export async function listLeadInteractions(id: string) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('lead_interactions')
     .select('id, kind, summary, created_at, actor:profiles!lead_interactions_actor_id_fkey(full_name)')
     .eq('lead_id', id)
@@ -156,7 +156,7 @@ export async function listLeadInteractions(id: string) {
 }
 
 export async function listLeadAssignees() {
-  const { data, error } = await supabaseAdmin.from('profiles').select('id, full_name, role').in('role', ['admin', 'teacher']).eq('status', 'active').order('full_name');
+  const { data, error } = await db.from('profiles').select('id, full_name, role').in('role', ['admin', 'teacher']).eq('status', 'active').order('full_name');
   if (error) throw error;
   return (data as { id: string; full_name: string; role: string }[]).map((row) => ({ id: row.id, fullName: row.full_name, role: row.role }));
 }

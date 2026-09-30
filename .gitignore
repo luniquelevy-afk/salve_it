@@ -7,10 +7,12 @@ coverage/
 .env
 .env.*
 !.env.example
+# Clés de compte de service Firebase téléchargées depuis la console
+*firebase-adminsdk*.json
 
-# Supabase CLI
-supabase/.temp/
-supabase/.branches/
+# Firebase CLI et émulateurs
+.firebase/
+firebase/.emulator-data/
 
 .DS_Store
 Thumbs.db

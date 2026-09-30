@@ -1,5 +1,5 @@
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import type { AuthContext } from '../middleware/auth.js';
 import { classIdsForStudent, classScopeFilter, studentLevel, type CefrLevel } from './access.js';
 import { recordAudit } from './audit.js';
@@ -52,7 +52,7 @@ async function assertStudentCanAccess(studentId: string, row: Pick<ExerciseRow, 
   if (!row.is_published) throw new HttpError(404, 'exercise_not_found', 'Exercice introuvable.');
   if (!row.course_id) return;
   const classIds = await classIdsForStudent(studentId);
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('courses')
     .select('id')
     .eq('id', row.course_id)
@@ -69,14 +69,14 @@ export async function listStudentExercises(studentId: string, filters: { level?:
   const level = await studentLevel(studentId);
   const effectiveLevel = filters.level === 'all' ? null : (filters.level ?? level);
 
-  let query = supabaseAdmin.from('exercises').select('id, course_id, title, level, category, exercise_type').eq('is_published', true);
+  let query = db.from('exercises').select('id, course_id, title, level, category, exercise_type').eq('is_published', true);
   if (effectiveLevel) query = query.eq('level', effectiveLevel);
   const { data, error } = await query.order('level').order('title');
   if (error) throw error;
 
   const [classIds, attempts] = await Promise.all([
     classIdsForStudent(studentId),
-    supabaseAdmin.from('exercise_attempts').select('exercise_id, score, max_score, created_at').eq('student_id', studentId).order('created_at', { ascending: false }),
+    db.from('exercise_attempts').select('exercise_id, score, max_score, created_at').eq('student_id', studentId).order('created_at', { ascending: false }),
   ]);
   if (attempts.error) throw attempts.error;
 
@@ -84,7 +84,7 @@ export async function listStudentExercises(studentId: string, filters: { level?:
   const courseIds = [...new Set((data as { course_id: string | null }[]).map((row) => row.course_id).filter((id): id is string => Boolean(id)))];
   let visibleCourses = new Set<string>();
   if (courseIds.length > 0) {
-    const { data: courses, error: coursesError } = await supabaseAdmin
+    const { data: courses, error: coursesError } = await db
       .from('courses')
       .select('id')
       .in('id', courseIds)
@@ -119,7 +119,7 @@ export async function listStudentExercises(studentId: string, filters: { level?:
 }
 
 export async function getStudentExercise(studentId: string, exerciseId: string) {
-  const { data, error } = await supabaseAdmin.from('exercises').select(PUBLIC_COLUMNS).eq('id', exerciseId).maybeSingle();
+  const { data, error } = await db.from('exercises').select(PUBLIC_COLUMNS).eq('id', exerciseId).maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(404, 'exercise_not_found', 'Exercice introuvable.');
   await assertStudentCanAccess(studentId, data as ExerciseRow);
@@ -127,7 +127,7 @@ export async function getStudentExercise(studentId: string, exerciseId: string) 
 }
 
 export async function submitExerciseAttempt(studentId: string, exerciseId: string, answers: Record<string, string>) {
-  const { data, error } = await supabaseAdmin.from('exercises').select(ALL_COLUMNS).eq('id', exerciseId).maybeSingle();
+  const { data, error } = await db.from('exercises').select(ALL_COLUMNS).eq('id', exerciseId).maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(404, 'exercise_not_found', 'Exercice introuvable.');
   const row = data as ExerciseRow;
@@ -136,7 +136,7 @@ export async function submitExerciseAttempt(studentId: string, exerciseId: strin
   const result = gradeExercise(row.exercise_type, row.content, row.solution, answers);
   if (result.maxScore === 0) throw new HttpError(422, 'exercise_empty', 'Cet exercice ne contient aucun élément à corriger.');
 
-  const { error: insertError } = await supabaseAdmin.from('exercise_attempts').insert({
+  const { error: insertError } = await db.from('exercise_attempts').insert({
     exercise_id: row.id,
     student_id: studentId,
     answers,
@@ -155,7 +155,7 @@ function canEdit(auth: AuthContext, row: Pick<ExerciseRow, 'created_by'>): boole
 }
 
 export async function listManagedExercises(auth: AuthContext) {
-  const { data, error } = await supabaseAdmin.from('exercises').select(ALL_COLUMNS).order('updated_at', { ascending: false }).limit(500);
+  const { data, error } = await db.from('exercises').select(ALL_COLUMNS).order('updated_at', { ascending: false }).limit(500);
   if (error) throw error;
   return (data as ExerciseRow[]).map((row) => ({
     ...toPublicExercise(row),
@@ -167,7 +167,7 @@ export async function listManagedExercises(auth: AuthContext) {
 
 async function assertCourseExists(courseId: string | null | undefined) {
   if (!courseId) return;
-  const { data, error } = await supabaseAdmin.from('courses').select('id').eq('id', courseId).maybeSingle();
+  const { data, error } = await db.from('courses').select('id').eq('id', courseId).maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(400, 'course_not_found', 'Cours de rattachement introuvable.');
 }
@@ -189,7 +189,7 @@ function toRow(meta: ExerciseMeta, input: ExerciseInput) {
 
 export async function createExercise(auth: AuthContext, meta: ExerciseMeta, input: ExerciseInput) {
   await assertCourseExists(meta.courseId);
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('exercises')
     .insert({ ...toRow(meta, input), created_by: auth.userId })
     .select('id')
@@ -200,7 +200,7 @@ export async function createExercise(auth: AuthContext, meta: ExerciseMeta, inpu
 }
 
 async function getEditableExercise(auth: AuthContext, id: string) {
-  const { data, error } = await supabaseAdmin.from('exercises').select('id, created_by').eq('id', id).maybeSingle();
+  const { data, error } = await db.from('exercises').select('id, created_by').eq('id', id).maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(404, 'exercise_not_found', 'Exercice introuvable.');
   if (!canEdit(auth, data as ExerciseRow)) throw new HttpError(403, 'exercise_forbidden', 'Seul l’auteur ou un admin peut modifier cet exercice.');
@@ -209,7 +209,7 @@ async function getEditableExercise(auth: AuthContext, id: string) {
 export async function updateExercise(auth: AuthContext, id: string, meta: ExerciseMeta, input: ExerciseInput) {
   await getEditableExercise(auth, id);
   await assertCourseExists(meta.courseId);
-  const { error } = await supabaseAdmin.from('exercises').update(toRow(meta, input)).eq('id', id);
+  const { error } = await db.from('exercises').update(toRow(meta, input)).eq('id', id);
   if (error) throw error;
   await recordAudit({ actorId: auth.userId, action: 'exercise.update', entityType: 'exercise', entityId: id });
   return { id };
@@ -217,7 +217,7 @@ export async function updateExercise(auth: AuthContext, id: string, meta: Exerci
 
 export async function deleteExercise(auth: AuthContext, id: string) {
   await getEditableExercise(auth, id);
-  const { error } = await supabaseAdmin.from('exercises').delete().eq('id', id);
+  const { error } = await db.from('exercises').delete().eq('id', id);
   if (error) throw error;
   await recordAudit({ actorId: auth.userId, action: 'exercise.delete', entityType: 'exercise', entityId: id });
 }

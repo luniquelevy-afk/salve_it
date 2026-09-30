@@ -1,5 +1,5 @@
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import type { AuthContext } from '../middleware/auth.js';
 import { assertCanManageClass, visibleClassIds } from './access.js';
 import { recordAudit } from './audit.js';
@@ -19,7 +19,7 @@ interface AnnouncementRow {
   classes: { name: string } | null;
 }
 
-// Même règle de visibilité que la policy RLS « announcements: lecture selon la cible ».
+// Règle de visibilité des annonces selon la cible (ex-policy « announcements: lecture selon la cible »).
 export function isVisibleTo(auth: AuthContext, classIds: string[] | 'all', row: Pick<AnnouncementRow, 'target' | 'target_class_id' | 'published_by'>): boolean {
   if (auth.role === 'admin' || row.published_by === auth.userId || row.target === 'all') return true;
   if (row.target === 'students') return auth.role === 'student';
@@ -30,7 +30,7 @@ export function isVisibleTo(auth: AuthContext, classIds: string[] | 'all', row: 
 export async function listAnnouncements(auth: AuthContext) {
   const [classIds, result] = await Promise.all([
     visibleClassIds(auth),
-    supabaseAdmin
+    db
       .from('announcements')
       .select('id, title, body, target, target_class_id, published_by, published_at, profiles(full_name), classes(name)')
       .order('published_at', { ascending: false })
@@ -63,7 +63,7 @@ export async function createAnnouncement(auth: AuthContext, input: { title: stri
     throw new HttpError(403, 'announcement_forbidden', 'Un enseignant publie uniquement pour ses classes.');
   }
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('announcements')
     .insert({
       title: input.title,
@@ -89,14 +89,14 @@ export async function createAnnouncement(auth: AuthContext, input: { title: stri
 async function announcementRecipients(target: AnnouncementTarget, classId: string | null): Promise<string[]> {
   if (target === 'class' && classId) {
     const [members, klass] = await Promise.all([
-      supabaseAdmin.from('class_students').select('student_id').eq('class_id', classId),
-      supabaseAdmin.from('classes').select('teacher_id').eq('id', classId).single(),
+      db.from('class_students').select('student_id').eq('class_id', classId),
+      db.from('classes').select('teacher_id').eq('id', classId).single(),
     ]);
     if (members.error) throw members.error;
     if (klass.error) throw klass.error;
     return [...(members.data as { student_id: string }[]).map((row) => row.student_id), ...(klass.data.teacher_id ? [klass.data.teacher_id as string] : [])];
   }
-  let query = supabaseAdmin.from('profiles').select('id').eq('status', 'active');
+  let query = db.from('profiles').select('id').eq('status', 'active');
   if (target === 'students') query = query.eq('role', 'student');
   if (target === 'teachers') query = query.eq('role', 'teacher');
   const { data, error } = await query;
@@ -105,13 +105,13 @@ async function announcementRecipients(target: AnnouncementTarget, classId: strin
 }
 
 export async function deleteAnnouncement(auth: AuthContext, id: string) {
-  const { data, error } = await supabaseAdmin.from('announcements').select('published_by').eq('id', id).maybeSingle();
+  const { data, error } = await db.from('announcements').select('published_by').eq('id', id).maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(404, 'announcement_not_found', 'Annonce introuvable.');
   if (auth.role !== 'admin' && data.published_by !== auth.userId) {
     throw new HttpError(403, 'announcement_forbidden', 'Seul l’auteur ou un admin peut supprimer cette annonce.');
   }
-  const { error: deleteError } = await supabaseAdmin.from('announcements').delete().eq('id', id);
+  const { error: deleteError } = await db.from('announcements').delete().eq('id', id);
   if (deleteError) throw deleteError;
   await recordAudit({ actorId: auth.userId, action: 'announcement.delete', entityType: 'announcement', entityId: id });
 }

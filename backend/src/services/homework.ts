@@ -2,7 +2,7 @@
 import { formatBrazzavilleDateTime } from '../lib/dates.js';
 import { HttpError } from '../lib/http-error.js';
 import { logger } from '../lib/logger.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import type { AuthContext } from '../middleware/auth.js';
 import { assertCanManageClass, classIdsForStudent } from './access.js';
 import { classRoster } from './attendance.js';
@@ -65,7 +65,7 @@ function toAssignment(row: AssignmentRow) {
 }
 
 async function loadAssignment(id: string): Promise<AssignmentRow> {
-  const { data, error } = await supabaseAdmin.from('homework_assignments').select(ASSIGNMENT_COLUMNS).eq('id', id).maybeSingle();
+  const { data, error } = await db.from('homework_assignments').select(ASSIGNMENT_COLUMNS).eq('id', id).maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(404, 'homework_not_found', 'Devoir introuvable.');
   return data as unknown as AssignmentRow;
@@ -85,7 +85,7 @@ async function assertResources(input: HomeworkInput) {
     ['exercises', input.exerciseId],
   ] as const) {
     if (!id) continue;
-    const { data, error } = await supabaseAdmin.from(table).select('id').eq('id', id).maybeSingle();
+    const { data, error } = await db.from(table).select('id').eq('id', id).maybeSingle();
     if (error) throw error;
     if (!data) throw new HttpError(400, 'resource_not_found', table === 'courses' ? 'Cours introuvable.' : 'Exercice introuvable.');
   }
@@ -104,7 +104,7 @@ const toRow = (input: HomeworkInput) => ({
 export async function listClassHomework(auth: AuthContext, classId: string) {
   await assertCanManageClass(auth, classId);
   const [assignments, roster] = await Promise.all([
-    supabaseAdmin.from('homework_assignments').select(ASSIGNMENT_COLUMNS).eq('class_id', classId).order('due_at', { ascending: false }).limit(100),
+    db.from('homework_assignments').select(ASSIGNMENT_COLUMNS).eq('class_id', classId).order('due_at', { ascending: false }).limit(100),
     classRoster(classId),
   ]);
   if (assignments.error) throw assignments.error;
@@ -112,7 +112,7 @@ export async function listClassHomework(auth: AuthContext, classId: string) {
 
   const submissions: { assignment_id: string; status: SubmissionStatus }[] = [];
   if (rows.length > 0) {
-    const { data, error } = await supabaseAdmin.from('homework_submissions').select('assignment_id, status').in('assignment_id', rows.map((row) => row.id));
+    const { data, error } = await db.from('homework_submissions').select('assignment_id, status').in('assignment_id', rows.map((row) => row.id));
     if (error) throw error;
     submissions.push(...(data as { assignment_id: string; status: SubmissionStatus }[]));
   }
@@ -136,7 +136,7 @@ export async function listClassHomework(auth: AuthContext, classId: string) {
 export async function getHomeworkDetail(auth: AuthContext, id: string, now = new Date()) {
   const row = await loadAssignment(id);
   await assertCanManageClass(auth, row.class_id);
-  const [roster, submissions] = await Promise.all([classRoster(row.class_id), supabaseAdmin.from('homework_submissions').select(SUBMISSION_COLUMNS).eq('assignment_id', id)]);
+  const [roster, submissions] = await Promise.all([classRoster(row.class_id), db.from('homework_submissions').select(SUBMISSION_COLUMNS).eq('assignment_id', id)]);
   if (submissions.error) throw submissions.error;
   const byStudent = new Map((submissions.data as SubmissionRow[]).map((submission) => [submission.student_id, submission]));
 
@@ -160,7 +160,7 @@ export async function getHomeworkDetail(auth: AuthContext, id: string, now = new
 export async function createHomework(auth: AuthContext, classId: string, input: HomeworkInput) {
   await assertCanManageClass(auth, classId);
   await assertResources(input);
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('homework_assignments')
     .insert({ ...toRow(input), class_id: classId, created_by: auth.userId })
     .select(ASSIGNMENT_COLUMNS)
@@ -189,7 +189,7 @@ export async function updateHomework(auth: AuthContext, id: string, input: Homew
   const current = await loadAssignment(id);
   await assertCanManageClass(auth, current.class_id);
   await assertResources(input);
-  const { data, error } = await supabaseAdmin.from('homework_assignments').update(toRow(input)).eq('id', id).select(ASSIGNMENT_COLUMNS).single();
+  const { data, error } = await db.from('homework_assignments').update(toRow(input)).eq('id', id).select(ASSIGNMENT_COLUMNS).single();
   if (error) throw error;
   await recordAudit({ actorId: auth.userId, action: 'homework.update', entityType: 'homework_assignment', entityId: id });
   return toAssignment(data as unknown as AssignmentRow);
@@ -198,7 +198,7 @@ export async function updateHomework(auth: AuthContext, id: string, input: Homew
 export async function deleteHomework(auth: AuthContext, id: string) {
   const current = await loadAssignment(id);
   await assertCanManageClass(auth, current.class_id);
-  const { error } = await supabaseAdmin.from('homework_assignments').delete().eq('id', id);
+  const { error } = await db.from('homework_assignments').delete().eq('id', id);
   if (error) throw error;
   await recordAudit({ actorId: auth.userId, action: 'homework.delete', entityType: 'homework_assignment', entityId: id, metadata: { title: current.title } });
 }
@@ -210,7 +210,7 @@ export async function reviewSubmission(auth: AuthContext, assignmentId: string, 
   if (input.status === 'a_reprendre' && !comment) throw new HttpError(400, 'comment_required', 'Indiquez à l’étudiant ce qu’il doit reprendre.');
 
   const reviewedAt = new Date().toISOString();
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('homework_submissions')
     .update({ status: input.status, teacher_comment: comment, reviewed_by: auth.userId, reviewed_at: reviewedAt })
     .eq('assignment_id', assignmentId)
@@ -239,7 +239,7 @@ export async function listMyHomework(studentId: string, now = new Date()) {
   const classIds = await classIdsForStudent(studentId);
   if (classIds.length === 0) return [];
   const since = new Date(now.getTime() - 60 * DAY_MS).toISOString();
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('homework_assignments')
     .select(ASSIGNMENT_COLUMNS)
     .in('class_id', classIds)
@@ -250,7 +250,7 @@ export async function listMyHomework(studentId: string, now = new Date()) {
   const rows = data as unknown as AssignmentRow[];
   if (rows.length === 0) return [];
 
-  const { data: submissions, error: submissionsError } = await supabaseAdmin
+  const { data: submissions, error: submissionsError } = await db
     .from('homework_submissions')
     .select(SUBMISSION_COLUMNS)
     .eq('student_id', studentId)
@@ -281,11 +281,11 @@ export async function submitHomework(studentId: string, assignmentId: string, an
   // Devoir d'une autre classe : même réponse qu'un devoir inexistant.
   if (!(await classIdsForStudent(studentId)).includes(row.class_id)) throw new HttpError(404, 'homework_not_found', 'Devoir introuvable.');
 
-  const { data: existing, error: existingError } = await supabaseAdmin.from('homework_submissions').select('status').eq('assignment_id', assignmentId).eq('student_id', studentId).maybeSingle();
+  const { data: existing, error: existingError } = await db.from('homework_submissions').select('status').eq('assignment_id', assignmentId).eq('student_id', studentId).maybeSingle();
   if (existingError) throw existingError;
   if (existing?.status === 'valide') throw new HttpError(409, 'homework_validated', 'Ce devoir a déjà été validé par votre enseignant.');
 
-  const { error } = await supabaseAdmin.from('homework_submissions').upsert(
+  const { error } = await db.from('homework_submissions').upsert(
     { assignment_id: assignmentId, student_id: studentId, status: 'rendu', answer: answer?.trim() || null, submitted_at: new Date().toISOString(), reviewed_by: null, reviewed_at: null },
     { onConflict: 'assignment_id,student_id' },
   );
@@ -296,7 +296,7 @@ export async function submitHomework(studentId: string, assignmentId: string, an
 // ── Rappel d'échéance (§15) ─────────────────────────────────
 
 export async function sweepHomeworkDueSoon(now = new Date()): Promise<number> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('homework_assignments')
     .select('id, class_id, title, due_at, classes!inner(is_active)')
     .eq('classes.is_active', true)
@@ -309,7 +309,7 @@ export async function sweepHomeworkDueSoon(now = new Date()): Promise<number> {
   for (const assignment of data as unknown as { id: string; class_id: string; title: string; due_at: string }[]) {
     const [students, submitted] = await Promise.all([
       activeClassStudentIds(assignment.class_id),
-      supabaseAdmin.from('homework_submissions').select('student_id').eq('assignment_id', assignment.id),
+      db.from('homework_submissions').select('student_id').eq('assignment_id', assignment.id),
     ]);
     if (submitted.error) throw submitted.error;
     const done = new Set((submitted.data as { student_id: string }[]).map((row) => row.student_id));

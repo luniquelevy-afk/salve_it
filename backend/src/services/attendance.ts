@@ -1,6 +1,6 @@
 // §13 : présence aux séances — saisie par l'enseignant titulaire de la classe ou l'admin.
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import type { AuthContext } from '../middleware/auth.js';
 import { assertCanManageClass, type CefrLevel } from './access.js';
 import { recordAudit } from './audit.js';
@@ -29,7 +29,7 @@ export interface RosterStudent {
 }
 
 export async function classRoster(classId: string): Promise<RosterStudent[]> {
-  const { data, error } = await supabaseAdmin.from('class_students').select('student_id, profiles(id, full_name, level, status)').eq('class_id', classId);
+  const { data, error } = await db.from('class_students').select('student_id, profiles(id, full_name, level, status)').eq('class_id', classId);
   if (error) throw error;
   return (data as unknown as { profiles: { id: string; full_name: string; level: CefrLevel | null; status: string } | null }[])
     .map((row) => row.profiles)
@@ -48,7 +48,7 @@ interface SessionRow {
 }
 
 async function loadSession(sessionId: string): Promise<SessionRow> {
-  const { data, error } = await supabaseAdmin.from('class_sessions').select('id, class_id, title, starts_at, ends_at, classes(name)').eq('id', sessionId).maybeSingle();
+  const { data, error } = await db.from('class_sessions').select('id, class_id, title, starts_at, ends_at, classes(name)').eq('id', sessionId).maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(404, 'class_session_not_found', 'Séance introuvable.');
   return data as unknown as SessionRow;
@@ -59,7 +59,7 @@ export async function getSessionAttendance(auth: AuthContext, sessionId: string)
   await assertCanManageClass(auth, session.class_id);
   const [roster, records] = await Promise.all([
     classRoster(session.class_id),
-    supabaseAdmin.from('class_attendance').select('student_id, status, note, recorded_at').eq('session_id', sessionId),
+    db.from('class_attendance').select('student_id, status, note, recorded_at').eq('session_id', sessionId),
   ]);
   if (records.error) throw records.error;
   const byStudent = new Map((records.data as { student_id: string; status: AttendanceStatus; note: string | null; recorded_at: string }[]).map((row) => [row.student_id, row]));
@@ -88,7 +88,7 @@ export async function saveSessionAttendance(auth: AuthContext, sessionId: string
 
   if (entries.length > 0) {
     const recordedAt = new Date().toISOString();
-    const { error } = await supabaseAdmin.from('class_attendance').upsert(
+    const { error } = await db.from('class_attendance').upsert(
       entries.map((entry) => ({
         session_id: sessionId,
         student_id: entry.studentId,
@@ -110,14 +110,14 @@ export async function getClassAttendance(auth: AuthContext, classId: string, now
   await assertCanManageClass(auth, classId);
   const [roster, sessions] = await Promise.all([
     classRoster(classId),
-    supabaseAdmin.from('class_sessions').select('id').eq('class_id', classId).lte('starts_at', now.toISOString()).order('starts_at', { ascending: false }).limit(200),
+    db.from('class_sessions').select('id').eq('class_id', classId).lte('starts_at', now.toISOString()).order('starts_at', { ascending: false }).limit(200),
   ]);
   if (sessions.error) throw sessions.error;
   const sessionIds = (sessions.data as { id: string }[]).map((row) => row.id);
 
   const statusesByStudent = new Map<string, AttendanceStatus[]>();
   if (sessionIds.length > 0) {
-    const { data, error } = await supabaseAdmin.from('class_attendance').select('student_id, status').in('session_id', sessionIds);
+    const { data, error } = await db.from('class_attendance').select('student_id, status').in('session_id', sessionIds);
     if (error) throw error;
     for (const row of data as { student_id: string; status: AttendanceStatus }[]) {
       statusesByStudent.set(row.student_id, [...(statusesByStudent.get(row.student_id) ?? []), row.status]);
@@ -132,7 +132,7 @@ export async function getClassAttendance(auth: AuthContext, classId: string, now
 
 export async function getMyAttendance(studentId: string, now = new Date()) {
   const since = new Date(now.getTime() - 90 * DAY_MS).toISOString();
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('class_attendance')
     .select('status, note, class_sessions!inner(title, starts_at, classes(name))')
     .eq('student_id', studentId)

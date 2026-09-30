@@ -1,5 +1,5 @@
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import type { AuthContext } from '../middleware/auth.js';
 import { assertCanManageClass, visibleClassIds, type CefrLevel } from './access.js';
 import { recordAudit } from './audit.js';
@@ -35,7 +35,7 @@ function toClass(row: ClassRow) {
 export async function listClasses(auth: AuthContext) {
   const scope = await visibleClassIds(auth);
   if (scope !== 'all' && scope.length === 0) return [];
-  let query = supabaseAdmin.from('classes').select(CLASS_COLUMNS).order('name');
+  let query = db.from('classes').select(CLASS_COLUMNS).order('name');
   if (scope !== 'all') query = query.in('id', scope);
   const { data, error } = await query;
   if (error) throw error;
@@ -46,8 +46,8 @@ export async function listClasses(auth: AuthContext) {
 export async function getClassDetail(auth: AuthContext, classId: string) {
   await assertCanManageClass(auth, classId);
   const [classResult, studentsResult] = await Promise.all([
-    supabaseAdmin.from('classes').select(CLASS_COLUMNS).eq('id', classId).single(),
-    supabaseAdmin.from('class_students').select('student_id, profiles(id, full_name, level, status)').eq('class_id', classId),
+    db.from('classes').select(CLASS_COLUMNS).eq('id', classId).single(),
+    db.from('class_students').select('student_id, profiles(id, full_name, level, status)').eq('class_id', classId),
   ]);
   if (classResult.error) throw classResult.error;
   if (studentsResult.error) throw studentsResult.error;
@@ -62,7 +62,7 @@ export async function getClassDetail(auth: AuthContext, classId: string) {
 }
 
 async function assertRole(profileId: string, role: 'teacher' | 'student') {
-  const { data, error } = await supabaseAdmin.from('profiles').select('role').eq('id', profileId).maybeSingle();
+  const { data, error } = await db.from('profiles').select('role').eq('id', profileId).maybeSingle();
   if (error) throw error;
   if (data?.role !== role) {
     throw new HttpError(400, `${role}_not_found`, role === 'teacher' ? 'Enseignant introuvable.' : 'Étudiant introuvable.');
@@ -78,7 +78,7 @@ export interface ClassInput {
 
 export async function createClass(actorId: string, input: ClassInput) {
   if (input.teacherId) await assertRole(input.teacherId, 'teacher');
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('classes')
     .insert({ name: input.name, program_id: input.programId ?? null, teacher_id: input.teacherId ?? null, is_active: input.isActive ?? true })
     .select('id')
@@ -90,7 +90,7 @@ export async function createClass(actorId: string, input: ClassInput) {
 
 export async function updateClass(actorId: string, classId: string, input: Partial<ClassInput>) {
   if (input.teacherId) await assertRole(input.teacherId, 'teacher');
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('classes')
     .update({
       ...(input.name !== undefined && { name: input.name }),
@@ -108,18 +108,18 @@ export async function updateClass(actorId: string, classId: string, input: Parti
 
 export async function addStudentToClass(actorId: string, classId: string, studentId: string) {
   await assertRole(studentId, 'student');
-  const { data: klass, error: classError } = await supabaseAdmin.from('classes').select('id, program_id').eq('id', classId).maybeSingle();
+  const { data: klass, error: classError } = await db.from('classes').select('id, program_id').eq('id', classId).maybeSingle();
   if (classError) throw classError;
   if (!klass) throw new HttpError(404, 'class_not_found', 'Classe introuvable.');
 
-  const { error } = await supabaseAdmin
+  const { error } = await db
     .from('class_students')
     .upsert({ class_id: classId, student_id: studentId }, { onConflict: 'class_id,student_id', ignoreDuplicates: true });
   if (error) throw error;
 
   // Affectation à une classe = inscription active au programme de la classe (EF-36).
   if (klass.program_id) {
-    const { error: enrollError } = await supabaseAdmin
+    const { error: enrollError } = await db
       .from('enrollments')
       .upsert({ student_id: studentId, program_id: klass.program_id, status: 'active' }, { onConflict: 'student_id,program_id', ignoreDuplicates: true });
     if (enrollError) throw enrollError;
@@ -128,7 +128,7 @@ export async function addStudentToClass(actorId: string, classId: string, studen
 }
 
 export async function removeStudentFromClass(actorId: string, classId: string, studentId: string) {
-  const { error } = await supabaseAdmin.from('class_students').delete().eq('class_id', classId).eq('student_id', studentId);
+  const { error } = await db.from('class_students').delete().eq('class_id', classId).eq('student_id', studentId);
   if (error) throw error;
   await recordAudit({ actorId, action: 'class.remove_student', entityType: 'class', entityId: classId, metadata: { studentId } });
 }
@@ -136,7 +136,7 @@ export async function removeStudentFromClass(actorId: string, classId: string, s
 // ── Programmes et inscriptions (EF-36) ──────────────────────
 
 export async function listPrograms() {
-  const { data, error } = await supabaseAdmin.from('programs').select('id, name, level, description, is_active, enrollments(count)').order('name');
+  const { data, error } = await db.from('programs').select('id, name, level, description, is_active, enrollments(count)').order('name');
   if (error) throw error;
   return (data as unknown as { id: string; name: string; level: CefrLevel | null; description: string | null; is_active: boolean; enrollments: { count: number }[] }[]).map(
     (row) => ({
@@ -158,7 +158,7 @@ export interface ProgramInput {
 }
 
 export async function createProgram(actorId: string, input: ProgramInput) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('programs')
     .insert({ name: input.name, level: input.level ?? null, description: input.description ?? null, is_active: input.isActive ?? true })
     .select('id')
@@ -169,7 +169,7 @@ export async function createProgram(actorId: string, input: ProgramInput) {
 }
 
 export async function updateProgram(actorId: string, programId: string, input: Partial<ProgramInput>) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('programs')
     .update({
       ...(input.name !== undefined && { name: input.name }),
@@ -186,7 +186,7 @@ export async function updateProgram(actorId: string, programId: string, input: P
 }
 
 export async function listEnrollments(programId: string) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('enrollments')
     .select('id, status, enrolled_at, profiles(id, full_name, level)')
     .eq('program_id', programId)
@@ -204,7 +204,7 @@ export async function listEnrollments(programId: string) {
 
 export async function setEnrollment(actorId: string, input: { studentId: string; programId: string; status: 'active' | 'completed' | 'suspended' }) {
   await assertRole(input.studentId, 'student');
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('enrollments')
     .upsert({ student_id: input.studentId, program_id: input.programId, status: input.status }, { onConflict: 'student_id,program_id' })
     .select('id')

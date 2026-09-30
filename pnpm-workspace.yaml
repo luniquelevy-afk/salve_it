@@ -2,9 +2,10 @@ packages:
   - frontend
   - backend
 allowBuilds:
+  '@firebase/util': false
   '@google/genai': false
   esbuild: true
   protobufjs: false
-  supabase: true
-# Connexion lente : les binaires natifs (TypeScript, Supabase CLI) dépassent le délai par défaut de 60 s.
+  re2: false
+# Connexion lente : les binaires natifs (TypeScript, Firebase CLI) dépassent le délai par défaut de 60 s.
 fetchTimeout: 900000

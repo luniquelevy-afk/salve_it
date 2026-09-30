@@ -7,13 +7,13 @@ Référence fonctionnelle : [SALVE_ITALIA_CAHIER_DES_CHARGES.md](SALVE_ITALIA_CA
 
 | Dossier | Contenu |
 |---|---|
-| `frontend/` | React + Vite + TypeScript + Tailwind — client Supabase uniquement, aucune clé IA |
-| `backend/` | Node.js + Express + TypeScript — auth, services métier, clé service Supabase |
-| `supabase/` | Migrations SQL (schéma + RLS) et `seed.sql` |
+| `frontend/` | React + Vite + TypeScript + Tailwind — Firebase Auth uniquement, aucune donnée ni clé IA |
+| `backend/` | Node.js + Express + TypeScript — auth, services métier, SDK Admin Firebase (Firestore, Auth, Storage) |
+| `firebase/` | Règles de sécurité Firestore / Storage et index ; `firebase.json` (émulateurs) à la racine |
 
 ## Avancement
 
-- [x] **Phase 1 — Fondations** : 3 rôles, comptes créés par l'admin, mot de passe temporaire à changer, MFA admin, suspension immédiate, RLS sur toutes les tables, audit, déconnexion après inactivité
+- [x] **Phase 1 — Fondations** : 3 rôles, comptes créés par l'admin, mot de passe temporaire à changer, MFA admin, suspension immédiate, données fermées aux clients (contrôle d'accès côté API), audit, déconnexion après inactivité
 - [x] **Phase 2 — Moteur de test** : modèles configurables (sections, barème), banque de questions à options variables avec statuts et versions, simulations entraînement / examen, chrono serveur, pas de retour en arrière, correction détaillée, historique
 - [x] **Phase 3 — Agent ambassade IA** : entretien oral (Web Speech API) ou écrit, transcription corrigeable avant envoi, agent à sortie structurée (fournisseur `AI_PROVIDER`, **Gemini** en production), rapport multidimensionnel généré en tâche de fond, quotas et plafond de coût, journal `ai_usage_logs`, suppression d'un entretien. En développement, `AI_PROVIDER=fake` fournit un agent factice déterministe (sans clé ni coût, interdit en production)
 - [x] **Phase 4 — Contenu pédagogique** : cours (texte, vidéo, audio, PDF, lien) par niveau et par classe, exercices corrigés côté serveur (QCM, texte à trous, appariement), test de niveau gratuit sans compte avec prospects, calendrier des séances, annonces ciblées, gestion des classes, programmes et inscriptions
@@ -34,20 +34,25 @@ Référence fonctionnelle : [SALVE_ITALIA_CAHIER_DES_CHARGES.md](SALVE_ITALIA_CA
 
 ## Démarrage local
 
-Prérequis : Node ≥ 22, pnpm, Docker Desktop **lancé**.
+Prérequis : Node ≥ 22, pnpm, **Java 21** (émulateurs Firestore/Storage — ex. `winget install Microsoft.OpenJDK.21`).
+Les données tournent sur les **émulateurs Firebase** (projet `demo-salve-italia` : aucun vrai projet n'est touché).
 
 ```bash
 pnpm install
-pnpm db:start
+pnpm emulators
 ```
 
-`pnpm db:start` démarre Supabase en local, applique les migrations et le seed, puis affiche les URLs et les clés.
-Copier `backend/.env.example` → `backend/.env` et `frontend/.env.example` → `frontend/.env`, puis y reporter :
-- `API URL` → `SUPABASE_URL` / `VITE_SUPABASE_URL`
-- `anon key` (ou *publishable*) → `VITE_SUPABASE_ANON_KEY` (et `SUPABASE_ANON_KEY` pour le test RLS)
-- `service_role key` (ou *secret*) → `SUPABASE_SERVICE_ROLE_KEY` (**backend uniquement**)
+Copier `backend/.env.example` → `backend/.env` et `frontend/.env.example` → `frontend/.env` : les valeurs par défaut pointent déjà vers les émulateurs. En local, passer `REQUIRE_ADMIN_MFA=false` (l'émulateur Auth ne gère pas la MFA TOTP).
 
-Créer le premier admin :
+Dans un second terminal, appliquer les migrations puis, au besoin, le contenu et les comptes de démonstration :
+
+```bash
+pnpm db:migrate
+pnpm db:seed
+pnpm --filter @salve/backend demo:seed
+```
+
+Ou créer le premier admin réel :
 
 ```bash
 pnpm --filter @salve/backend bootstrap:admin --email admin@centre.cg --name "Prénom Nom"
@@ -60,33 +65,44 @@ pnpm dev
 ```
 
 À la première connexion, l'admin change son mot de passe puis active la MFA (application TOTP).
-Les emails locaux (réinitialisations, etc.) sont visibles dans Mailpit : http://127.0.0.1:54324.
+Interface des émulateurs (données, comptes, emails de réinitialisation) : http://127.0.0.1:4500.
+
+### Données : Firestore
+
+- **Aucun accès client** : les règles ([`firebase/firestore.rules`](firebase/firestore.rules), [`firebase/storage.rules`](firebase/storage.rules)) refusent tout. Le frontend n'utilise Firebase que pour l'authentification ; toutes les données passent par le backend (SDK Admin).
+- **Schéma** : [`backend/src/lib/db/schema.ts`](backend/src/lib/db/schema.ts) (une collection par ancienne table : colonnes, valeurs par défaut, clés, unicités, clés étrangères) et [`constraints.ts`](backend/src/lib/db/constraints.ts) (contraintes CHECK, `updated_at`, déclencheurs). La couche [`backend/src/lib/db`](backend/src/lib/db) les applique à chaque écriture, en transaction : mêmes codes d'erreur que Postgres (`23505`, `23503`, `23514`…), cascades `on delete`, unicités matérialisées dans la collection technique `_unique`.
+- **Requêtes** : les égalités sont exécutées par Firestore, le reste (plages multiples, tri, jointures) en mémoire — conçu pour le volume d'un centre de formation, **sans index composite** ([`firebase/firestore.indexes.json`](firebase/firestore.indexes.json) reste vide).
+- **Migrations** : [`backend/src/migrations`](backend/src/migrations) — scripts versionnés et idempotents (données de référence, configuration MFA), tracés dans la collection `_migrations`. Ne jamais modifier une migration publiée : en ajouter une.
 
 ## Tests
 
 ```bash
-pnpm test
+pnpm test               # tests unitaires (backend + frontend)
+pnpm test:integration   # démarre les émulateurs et exécute les suites d'intégration
 ```
 
-Test d'intégration RLS (critère d'acceptation Phase 1), Supabase local démarré :
-
-```bash
-RLS_TEST=1 pnpm --filter @salve/backend test
-```
+`pnpm test:integration` couvre la couche Firestore (contraintes, cascades, jointures, filtres, concurrence), les règles de sécurité (aucun accès client, même authentifié) et un parcours API complet (premier admin, comptes, classe, simulation, dépôt et téléchargement de document, tableaux de bord, site public, suspension). Il remplace l'ancien test RLS et tourne aussi en CI.
 
 ## Déploiement (production)
 
-Architecture cible (CDC §17.1) : **frontend sur Vercel**, **backend sur Railway/Render**, **base sur Supabase**. Les clés IA et la clé de service Supabase restent confinées au backend (CDC §17.2).
+Architecture cible (CDC §17.1) : **frontend sur Vercel**, **backend sur Railway/Render**, **Firebase** (Firestore + Authentication + Storage, projet `salve-italia`). Le compte de service Firebase et les clés IA restent confinés au backend (CDC §17.2).
 
-### 1. Supabase (base + Auth + stockage)
-Créer le projet de production, puis appliquer le schéma :
+### 1. Firebase (base + Auth + stockage)
+Dans la console du projet `salve-italia` :
+- **Authentication** → activer le fournisseur *E-mail/Mot de passe*, puis **passer à Identity Platform** (requis pour la MFA TOTP) ; ajouter le domaine Vercel aux domaines autorisés ;
+- **Firestore** → créer la base (mode production, région `europe-west`) ;
+- **Storage** → activer le bucket par défaut ;
+- **Paramètres → Comptes de service** → générer une clé privée (JSON) pour le backend.
+
+Déployer les règles, puis appliquer les migrations. `backend/.env.production` contient `FIREBASE_PROJECT_ID=salve-italia` et `FIREBASE_SERVICE_ACCOUNT` (clé JSON encodée en base64) — jamais la clé dans le code :
 
 ```bash
-supabase link --project-ref <ref-du-projet>
-supabase db push
+firebase login
+pnpm firebase:deploy
+ENV_FILE=.env.production pnpm db:migrate   # depuis backend/, avec backend/.env.production (ignoré par git)
 ```
 
-Créer le premier admin (`pnpm --filter @salve/backend bootstrap:admin …` avec les variables du projet de prod). Le bucket privé `student-documents` est créé automatiquement au démarrage du backend.
+Créer ensuite le premier admin (`pnpm --filter @salve/backend bootstrap:admin …`, mêmes variables).
 
 ### 2. Backend (Railway ou Render)
 Le blueprint [`render.yaml`](render.yaml) décrit le service (build workspace, `startCommand`, health check `/api/health`). Sur Railway, saisir les mêmes commandes dans l'interface. Variables **à renseigner** (secrets côté plateforme) :
@@ -98,7 +114,8 @@ Le blueprint [`render.yaml`](render.yaml) décrit le service (build workspace, `
 | `GEMINI_PAID_TIER` | `true` (**imposé** : le backend refuse de démarrer sinon) |
 | `GEMINI_API_KEY`, `GEMINI_MODEL` | clé du projet Gemini payant + modèle |
 | `GEMINI_INPUT_PRICE_PER_MTOK`, `GEMINI_OUTPUT_PRICE_PER_MTOK` | tarifs (suivi des coûts `ai_usage_logs`) |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY` | projet Supabase de prod |
+| `FIREBASE_PROJECT_ID` | `salve-italia` |
+| `FIREBASE_SERVICE_ACCOUNT` | clé JSON du compte de service (brute ou base64) — **aucune** variable `*_EMULATOR_HOST` (refusé en production) |
 | `CORS_ORIGINS` | domaine Vercel du frontend (séparés par des virgules) |
 | `APP_URL`, `SMTP_URL` | URL publique du frontend + serveur d'emails |
 | `REQUIRE_ADMIN_MFA` | `true` |
@@ -110,7 +127,7 @@ Le port est fourni par la plateforme (`PORT`) et lu automatiquement.
 
 | Variable | Valeur |
 |---|---|
-| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | projet Supabase de prod (clé anon/publishable uniquement) |
+| `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID` | configuration web publique du projet `salve-italia` (voir `frontend/.env.example`) |
 | `VITE_API_URL` | URL publique du backend (Railway/Render) |
 | `VITE_IDLE_TIMEOUT_MINUTES` | repli avant chargement du réglage serveur (ex. `30`) |
 
@@ -118,8 +135,9 @@ Le port est fourni par la plateforme (`PORT`) et lu automatiquement.
 
 - **Aucune auto-inscription** : `POST /api/admin/users` (admin + MFA) crée le compte Auth et le profil, renvoie un mot de passe temporaire affiché une seule fois.
 - **Rôle lu en base** à chaque requête API, jamais depuis le client ; `requireAuth → requirePasswordChanged → requireRole → requireAdminMfa`.
-- **RLS** : étudiant = ses lignes ; enseignant = étudiants de ses classes ; admin = tout, uniquement en session `aal2`. Un compte suspendu n'a plus aucun rôle en base, même avec un JWT encore valide.
-- **Écritures sur `profiles` et `audit_logs`** : backend uniquement (révoquées pour `authenticated`).
+- **Aucun accès client aux données** : les règles Firestore et Storage refusent tout ; seul le backend (SDK Admin) lit et écrit. Périmètres appliqués par l'API : étudiant = ses données ; enseignant = étudiants de ses classes ; admin = tout, uniquement avec une session MFA (claim Firebase `sign_in_second_factor`).
+- **Suspension** : profil suspendu (accès coupé dès la requête suivante), compte Firebase désactivé et sessions révoquées (jetons vérifiés avec `checkRevoked`).
+- **Documents** : fichiers privés dans Firebase Storage, téléchargement par URL signée de 60 s émise après contrôle d'accès.
 - **Session** en `sessionStorage` (pas de « se souvenir de moi ») + déconnexion après inactivité. La durée est **administrable** (`/admin/parametres`, EF-05) et lue par le frontend à la connexion ; `VITE_IDLE_TIMEOUT_MINUTES` ne sert plus que de repli avant chargement du réglage serveur.
 - Pas de cookie d'auth (jeton en en-tête `Authorization`) → pas de surface CSRF classique.
 

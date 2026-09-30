@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { auth } from './firebase';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
@@ -14,8 +14,8 @@ export class ApiError extends Error {
 }
 
 async function authHeader(): Promise<Record<string, string>> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
+  // Jeton d'identité Firebase, renouvelé automatiquement avant expiration.
+  const token = await auth.currentUser?.getIdToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

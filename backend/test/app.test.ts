@@ -2,24 +2,26 @@ import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-  getUser: vi.fn(),
+  verifyIdToken: vi.fn(),
   single: vi.fn(),
   listResult: { data: [] as unknown[], error: null as unknown },
 }));
 
-vi.mock('../src/lib/supabase.js', () => {
+vi.mock('../src/lib/db/index.js', () => {
   const builder: Record<string, unknown> = {};
   for (const method of ['select', 'eq', 'order', 'insert', 'update']) builder[method] = () => builder;
   builder.single = () => mocks.single();
   builder.maybeSingle = () => mocks.single();
   builder.then = (resolve: (value: unknown) => void) => resolve(mocks.listResult);
-  return {
-    supabaseAdmin: {
-      auth: { getUser: mocks.getUser, admin: {} },
-      from: () => builder,
-    },
-  };
+  return { db: { from: () => builder } };
 });
+
+vi.mock('../src/lib/firebase.js', () => ({
+  firebaseAuth: { verifyIdToken: mocks.verifyIdToken },
+  firestore: {},
+  storageBucket: () => ({}),
+  usingEmulators: false,
+}));
 
 const { createApp } = await import('../src/app.js');
 const app = createApp();
@@ -29,8 +31,14 @@ function fakeJwt(claims: Record<string, unknown>): string {
   return `${encode({ alg: 'HS256' })}.${encode(claims)}.signature`;
 }
 
+// Jeton factice : { aal } se traduit comme Firebase Auth le ferait (claim sign_in_second_factor).
+function claimsOf(token: string) {
+  const payload = JSON.parse(Buffer.from(token.split('.')[1] ?? '', 'base64url').toString('utf8')) as { aal?: string };
+  return { uid: '00000000-0000-4000-8000-000000000001', firebase: payload.aal === 'aal2' ? { sign_in_second_factor: 'totp' } : {} };
+}
+
 function signedInAs(profile: { role: string; status?: string; must_change_password?: boolean }) {
-  mocks.getUser.mockResolvedValue({ data: { user: { id: '00000000-0000-4000-8000-000000000001' } }, error: null });
+  mocks.verifyIdToken.mockImplementation(async (token: string) => claimsOf(token));
   mocks.single.mockResolvedValue({
     data: { status: 'active', must_change_password: false, ...profile },
     error: null,
@@ -54,7 +62,7 @@ describe('API — contrôle d’accès', () => {
   });
 
   it('refuse un jeton invalide', async () => {
-    mocks.getUser.mockResolvedValue({ data: { user: null }, error: new Error('bad jwt') });
+    mocks.verifyIdToken.mockRejectedValue(Object.assign(new Error('bad jwt'), { code: 'auth/argument-error' }));
     const res = await request(app).get('/api/me').set('Authorization', 'Bearer nope');
     expect(res.status).toBe(401);
   });

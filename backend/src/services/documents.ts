@@ -1,14 +1,13 @@
 // Espace documentaire étudiant (§11.1, EF-44 à EF-46) — suivi interne, jamais une validation officielle.
 import { randomUUID } from 'node:crypto';
+import { db } from '../lib/db/index.js';
+import { removeDocumentFiles, signedDocumentUrl, uploadDocumentFile } from '../lib/document-storage.js';
 import { HttpError } from '../lib/http-error.js';
-import { logger } from '../lib/logger.js';
-import { supabaseAdmin } from '../lib/supabase.js';
 import type { AuthContext } from '../middleware/auth.js';
 import { recordAudit } from './audit.js';
 import { buildChecklist, listDocumentTypes, listRequirements, type DocumentSnapshot, type DocumentStatus, type VisaType } from './checklist.js';
 import {
   detectDocumentMimeType,
-  DOCUMENT_BUCKET,
   DOCUMENT_MIME_EXTENSIONS,
   MAX_DOCUMENT_BYTES,
   sanitizeDocumentFileName,
@@ -16,6 +15,7 @@ import {
 } from './document-files.js';
 import { notifySafely } from './notifications.js';
 import { assertCanFollowStudent } from './access.js';
+import { documentsOverview } from './overviews.js';
 
 interface DocumentRow {
   id: string;
@@ -39,20 +39,6 @@ interface DocumentRow {
 const DOCUMENT_COLUMNS =
   'id, student_id, document_type, status, current_version, storage_path, file_name, mime_type, size_bytes, expires_at, reviewer_comment, reviewed_at, created_at, updated_at, document_types(label, requires_expiry), reviewer:profiles!student_documents_reviewed_by_fkey(full_name)';
 
-export async function ensureDocumentBucket(): Promise<void> {
-  const { data, error } = await supabaseAdmin.storage.getBucket(DOCUMENT_BUCKET);
-  if (data && !error) {
-    if (data.public) logger.error({ bucket: DOCUMENT_BUCKET }, 'document_bucket_is_public');
-    return;
-  }
-  const { error: createError } = await supabaseAdmin.storage.createBucket(DOCUMENT_BUCKET, {
-    public: false,
-    fileSizeLimit: MAX_DOCUMENT_BYTES,
-    allowedMimeTypes: Object.keys(DOCUMENT_MIME_EXTENSIONS),
-  });
-  if (createError) logger.error({ err: createError }, 'document_bucket_create_failed');
-}
-
 function toDocument(row: DocumentRow) {
   return {
     id: row.id,
@@ -74,7 +60,7 @@ function toDocument(row: DocumentRow) {
 }
 
 async function loadDocument(documentId: string): Promise<DocumentRow> {
-  const { data, error } = await supabaseAdmin.from('student_documents').select(DOCUMENT_COLUMNS).eq('id', documentId).maybeSingle();
+  const { data, error } = await db.from('student_documents').select(DOCUMENT_COLUMNS).eq('id', documentId).maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(404, 'document_not_found', 'Document introuvable.');
   return data as unknown as DocumentRow;
@@ -90,7 +76,7 @@ async function assertDocumentAccess(auth: AuthContext, document: Pick<DocumentRo
 }
 
 async function classTeacherIds(studentId: string): Promise<string[]> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('class_students')
     .select('classes!inner(teacher_id, is_active)')
     .eq('student_id', studentId)
@@ -105,14 +91,14 @@ async function classTeacherIds(studentId: string): Promise<string[]> {
 
 export async function getStudentDocumentsSpace(studentId: string) {
   const [documentsResult, historyResult, profileResult, requirements, documentTypes] = await Promise.all([
-    supabaseAdmin.from('student_documents').select(DOCUMENT_COLUMNS).eq('student_id', studentId),
-    supabaseAdmin
+    db.from('student_documents').select(DOCUMENT_COLUMNS).eq('student_id', studentId),
+    db
       .from('document_events')
       .select('id, document_id, action, version, comment, created_at, actor:profiles!document_events_actor_id_fkey(full_name), student_documents!inner(student_id)')
       .eq('student_documents.student_id', studentId)
       .order('created_at', { ascending: false })
       .limit(100),
-    supabaseAdmin.from('student_profiles').select('visa_type, financing_source, has_guarantor, study_objective').eq('student_id', studentId).maybeSingle(),
+    db.from('student_profiles').select('visa_type, financing_source, has_guarantor, study_objective').eq('student_id', studentId).maybeSingle(),
     listRequirements(true),
     listDocumentTypes(),
   ]);
@@ -162,11 +148,11 @@ export async function uploadDocument(studentId: string, documentType: string, fi
   const mimeType = detectDocumentMimeType(file);
   if (!mimeType) throw new HttpError(415, 'unsupported_file_type', 'Formats acceptés : PDF, JPEG, PNG ou WebP.');
 
-  const { data: type, error: typeError } = await supabaseAdmin.from('document_types').select('code, label').eq('code', documentType).eq('is_active', true).maybeSingle();
+  const { data: type, error: typeError } = await db.from('document_types').select('code, label').eq('code', documentType).eq('is_active', true).maybeSingle();
   if (typeError) throw typeError;
   if (!type) throw new HttpError(404, 'document_type_not_found', 'Type de document inconnu.');
 
-  const { data: existingData, error: existingError } = await supabaseAdmin
+  const { data: existingData, error: existingError } = await db
     .from('student_documents')
     .select('id, current_version')
     .eq('student_id', studentId)
@@ -178,8 +164,7 @@ export async function uploadDocument(studentId: string, documentType: string, fi
   const fileName = sanitizeDocumentFileName(rawFileName, mimeType);
   // Chemin opaque : aucune donnée fournie par l'utilisateur.
   const storagePath = `${studentId}/${documentType}/${randomUUID()}.${DOCUMENT_MIME_EXTENSIONS[mimeType]}`;
-  const { error: uploadError } = await supabaseAdmin.storage.from(DOCUMENT_BUCKET).upload(storagePath, file, { contentType: mimeType, upsert: false });
-  if (uploadError) throw uploadError;
+  await uploadDocumentFile(storagePath, file, mimeType);
 
   try {
     const version = existing ? existing.current_version + 1 : 1;
@@ -188,7 +173,7 @@ export async function uploadDocument(studentId: string, documentType: string, fi
 
     if (existing) {
       // Nouvelle version : repasse en attente de vérification.
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await db
         .from('student_documents')
         .update({ ...fileColumns, current_version: version, status: 'submitted', reviewer_comment: null, reviewed_by: null, reviewed_at: null, expiry_notified_at: null })
         .eq('id', existing.id)
@@ -199,7 +184,7 @@ export async function uploadDocument(studentId: string, documentType: string, fi
       if (!data) throw new HttpError(409, 'document_modified', 'Le document a été modifié entre-temps. Réessayez.');
       documentId = existing.id;
     } else {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await db
         .from('student_documents')
         .insert({ ...fileColumns, student_id: studentId, document_type: documentType })
         .select('id')
@@ -210,8 +195,8 @@ export async function uploadDocument(studentId: string, documentType: string, fi
     }
 
     const [versionResult, eventResult] = await Promise.all([
-      supabaseAdmin.from('student_document_versions').insert({ ...fileColumns, document_id: documentId, version, uploaded_by: studentId }),
-      supabaseAdmin.from('document_events').insert({ document_id: documentId, actor_id: studentId, action: 'upload', version }),
+      db.from('student_document_versions').insert({ ...fileColumns, document_id: documentId, version, uploaded_by: studentId }),
+      db.from('document_events').insert({ document_id: documentId, actor_id: studentId, action: 'upload', version }),
     ]);
     if (versionResult.error) throw versionResult.error;
     if (eventResult.error) throw eventResult.error;
@@ -228,7 +213,7 @@ export async function uploadDocument(studentId: string, documentType: string, fi
     return getStudentDocumentsSpace(studentId);
   } catch (err) {
     // Pas de fichier orphelin dans le stockage si l'enregistrement échoue.
-    await supabaseAdmin.storage.from(DOCUMENT_BUCKET).remove([storagePath]);
+    await removeDocumentFiles([storagePath]);
     throw err;
   }
 }
@@ -244,19 +229,18 @@ export async function getDocumentDownloadUrl(auth: AuthContext, documentId: stri
   let path = document.storage_path;
   let fileName = document.file_name;
   if (version && version !== document.current_version) {
-    const { data, error } = await supabaseAdmin.from('student_document_versions').select('storage_path, file_name').eq('document_id', documentId).eq('version', version).maybeSingle();
+    const { data, error } = await db.from('student_document_versions').select('storage_path, file_name').eq('document_id', documentId).eq('version', version).maybeSingle();
     if (error) throw error;
     if (!data) throw new HttpError(404, 'version_not_found', 'Version introuvable.');
     path = data.storage_path as string;
     fileName = data.file_name as string;
   }
 
-  const { data, error } = await supabaseAdmin.storage.from(DOCUMENT_BUCKET).createSignedUrl(path, SIGNED_URL_SECONDS, { download: fileName });
-  if (error) throw error;
+  const url = await signedDocumentUrl(path, SIGNED_URL_SECONDS, fileName);
   if (auth.role !== 'student') {
     await recordAudit({ actorId: auth.userId, action: 'document.download', entityType: 'student_document', entityId: documentId, metadata: { version: version ?? document.current_version } });
   }
-  return { url: data.signedUrl, expiresInSeconds: SIGNED_URL_SECONDS, fileName };
+  return { url, expiresInSeconds: SIGNED_URL_SECONDS, fileName };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -275,7 +259,7 @@ export async function reviewDocument(
   }
 
   // Le relecteur statue sur la version qu'il a consultée, pas sur un dépôt arrivé entre-temps.
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('student_documents')
     .update({
       status: input.action === 'validate' ? 'validated' : 'needs_correction',
@@ -290,7 +274,7 @@ export async function reviewDocument(
   if (error) throw error;
   if (!data) throw new HttpError(409, 'document_modified', 'Une nouvelle version a été déposée entre-temps. Rechargez la page.');
 
-  const { error: eventError } = await supabaseAdmin
+  const { error: eventError } = await db
     .from('document_events')
     .insert({ document_id: documentId, actor_id: auth.userId, action: input.action, version: input.version, comment: input.comment?.trim() || null });
   if (eventError) throw eventError;
@@ -313,9 +297,9 @@ export async function setDocumentExpiry(auth: AuthContext, documentId: string, e
   const document = await loadDocument(documentId);
   await assertDocumentAccess(auth, document);
 
-  const { error } = await supabaseAdmin.from('student_documents').update({ expires_at: expiresAt, expiry_notified_at: null }).eq('id', documentId);
+  const { error } = await db.from('student_documents').update({ expires_at: expiresAt, expiry_notified_at: null }).eq('id', documentId);
   if (error) throw error;
-  const { error: eventError } = await supabaseAdmin
+  const { error: eventError } = await db
     .from('document_events')
     .insert({ document_id: documentId, actor_id: auth.userId, action: 'set_expiry', version: document.current_version, comment: expiresAt ? `Expiration : ${expiresAt}` : 'Expiration retirée' });
   if (eventError) throw eventError;
@@ -329,19 +313,16 @@ export async function deleteDocument(auth: AuthContext, documentId: string) {
     throw new HttpError(409, 'document_validated', 'Un document vérifié ne peut pas être supprimé : déposez plutôt une nouvelle version.');
   }
 
-  const { data: versions, error } = await supabaseAdmin.from('student_document_versions').select('storage_path').eq('document_id', documentId);
+  const { data: versions, error } = await db.from('student_document_versions').select('storage_path').eq('document_id', documentId);
   if (error) throw error;
   const paths = [...new Set([document.storage_path, ...(versions as { storage_path: string }[]).map((row) => row.storage_path)])];
-  const { error: removeError } = await supabaseAdmin.storage.from(DOCUMENT_BUCKET).remove(paths);
-  if (removeError) throw removeError;
+  await removeDocumentFiles(paths);
 
-  const { error: deleteError } = await supabaseAdmin.from('student_documents').delete().eq('id', documentId);
+  const { error: deleteError } = await db.from('student_documents').delete().eq('id', documentId);
   if (deleteError) throw deleteError;
   await recordAudit({ actorId: auth.userId, action: 'document.delete', entityType: 'student_document', entityId: documentId, metadata: { documentType: document.document_type } });
 }
 
 export async function getDocumentsOverview(auth: AuthContext) {
-  const { data, error } = await supabaseAdmin.rpc('documents_overview', { p_teacher_id: auth.role === 'admin' ? null : auth.userId });
-  if (error) throw error;
-  return data as Record<string, unknown>;
+  return documentsOverview(auth.role === 'admin' ? null : auth.userId);
 }

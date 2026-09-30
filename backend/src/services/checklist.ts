@@ -1,6 +1,6 @@
 // Checklist administrative dynamique (§11.2, EF-47, EF-48, ENF-12).
 import { HttpError } from '../lib/http-error.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import { recordAudit } from './audit.js';
 
 export type VisaType = 'etudes' | 'tourisme' | 'travail';
@@ -119,7 +119,7 @@ export function toRequirement(row: Record<string, unknown>): Requirement {
 }
 
 export async function listRequirements(onlyActive: boolean): Promise<Requirement[]> {
-  let query = supabaseAdmin.from('checklist_requirements').select(REQUIREMENT_COLUMNS);
+  let query = db.from('checklist_requirements').select(REQUIREMENT_COLUMNS);
   if (onlyActive) query = query.eq('is_active', true);
   const { data, error } = await query.order('display_order');
   if (error) throw error;
@@ -127,7 +127,7 @@ export async function listRequirements(onlyActive: boolean): Promise<Requirement
 }
 
 export async function listDocumentTypes() {
-  const { data, error } = await supabaseAdmin.from('document_types').select('code, label, description, requires_expiry, display_order').eq('is_active', true).order('display_order');
+  const { data, error } = await db.from('document_types').select('code, label, description, requires_expiry, display_order').eq('is_active', true).order('display_order');
   if (error) throw error;
   return (data as { code: string; label: string; description: string | null; requires_expiry: boolean }[]).map((row) => ({
     code: row.code,
@@ -171,7 +171,7 @@ function requirementRow(input: RequirementInput, actorId: string) {
 }
 
 export async function createRequirement(actorId: string, input: RequirementInput) {
-  const { data, error } = await supabaseAdmin.from('checklist_requirements').insert(requirementRow(input, actorId)).select(REQUIREMENT_COLUMNS).single();
+  const { data, error } = await db.from('checklist_requirements').insert(requirementRow(input, actorId)).select(REQUIREMENT_COLUMNS).single();
   if (error?.code === '23505') throw new HttpError(409, 'requirement_code_taken', 'Ce code existe déjà.');
   if (error) throw error;
   await recordAudit({ actorId, action: 'checklist_requirement.create', entityType: 'checklist_requirement', entityId: data.id });
@@ -180,7 +180,7 @@ export async function createRequirement(actorId: string, input: RequirementInput
 
 // Une modification du contenu invalide la date de vérification : elle doit être revérifiée.
 export async function updateRequirement(actorId: string, id: string, input: RequirementInput) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('checklist_requirements')
     .update({ ...requirementRow(input, actorId), last_verified_at: null })
     .eq('id', id)
@@ -195,7 +195,7 @@ export async function updateRequirement(actorId: string, id: string, input: Requ
 
 // EF-48 : le centre atteste avoir vérifié l'exigence sur la source officielle à cette date.
 export async function markRequirementVerified(actorId: string, id: string, verifiedOn: string) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('checklist_requirements')
     .update({ last_verified_at: verifiedOn, updated_by: actorId })
     .eq('id', id)

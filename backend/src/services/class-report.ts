@@ -1,5 +1,5 @@
 // §13 : export du rapport de classe (CSV) — présence, devoirs et résultats par étudiant.
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import type { AuthContext } from '../middleware/auth.js';
 import { assertCanManageClass } from './access.js';
 import { getClassAttendance } from './attendance.js';
@@ -34,9 +34,9 @@ const average = (values: number[]) => (values.length > 0 ? Math.round(values.red
 export async function exportClassReport(auth: AuthContext, classId: string, now = new Date()) {
   await assertCanManageClass(auth, classId);
   const [klass, attendance, assignments] = await Promise.all([
-    supabaseAdmin.from('classes').select('name').eq('id', classId).single(),
+    db.from('classes').select('name').eq('id', classId).single(),
     getClassAttendance(auth, classId, now),
-    supabaseAdmin.from('homework_assignments').select('id').eq('class_id', classId).lte('due_at', now.toISOString()),
+    db.from('homework_assignments').select('id').eq('class_id', classId).lte('due_at', now.toISOString()),
   ]);
   if (klass.error) throw klass.error;
   if (assignments.error) throw assignments.error;
@@ -47,10 +47,10 @@ export async function exportClassReport(auth: AuthContext, classId: string, now 
 
   const [submissions, simulations, embassy] = await Promise.all([
     dueIds.length > 0 && studentIds.length > 0
-      ? supabaseAdmin.from('homework_submissions').select('student_id, status').in('assignment_id', dueIds).in('student_id', studentIds)
+      ? db.from('homework_submissions').select('student_id, status').in('assignment_id', dueIds).in('student_id', studentIds)
       : Promise.resolve({ data: [], error: null }),
     studentIds.length > 0
-      ? supabaseAdmin
+      ? db
           .from('simulations')
           .select('student_id, total_questions, score_by_section')
           .in('student_id', studentIds)
@@ -58,7 +58,7 @@ export async function exportClassReport(auth: AuthContext, classId: string, now 
           .neq('mode', 'revision')
           .gte('completed_at', since)
       : Promise.resolve({ data: [], error: null }),
-    studentIds.length > 0 ? supabaseAdmin.from('embassy_sessions').select('student_id, overall_score').in('student_id', studentIds).eq('status', 'completed') : Promise.resolve({ data: [], error: null }),
+    studentIds.length > 0 ? db.from('embassy_sessions').select('student_id, overall_score').in('student_id', studentIds).eq('status', 'completed') : Promise.resolve({ data: [], error: null }),
   ]);
   for (const result of [submissions, simulations, embassy]) if (result.error) throw result.error;
 

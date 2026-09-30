@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from '../../components/Logo';
-import { supabase } from '../../lib/supabase';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth, authErrorCode } from '../../lib/firebase';
 
 // Écran dédié « Mot de passe oublié ». Les comptes étant gérés par le centre, on propose
-// à la fois l'envoi d'un lien de réinitialisation (Supabase Auth) et le contact du centre.
+// à la fois l'envoi d'un lien de réinitialisation (Firebase Auth) et le contact du centre.
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
@@ -15,11 +16,13 @@ export function ForgotPasswordPage() {
     event.preventDefault();
     setSubmitting(true);
     setError(null);
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/mot-de-passe`,
-    });
+    // Page de réinitialisation hébergée par Firebase, puis retour à la connexion.
+    const resetError = await sendPasswordResetEmail(auth, email.trim(), { url: `${window.location.origin}/connexion` }).then(
+      () => null,
+      (err: unknown) => err,
+    );
     // On confirme l'envoi sans révéler si l'adresse existe (bonne pratique de sécurité).
-    if (resetError && /rate limit|too many/i.test(resetError.message)) {
+    if (authErrorCode(resetError) === 'auth/too-many-requests') {
       setError('Trop de demandes. Réessayez dans quelques minutes.');
     } else {
       setSent(true);

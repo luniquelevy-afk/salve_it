@@ -4,7 +4,7 @@ import nodemailer, { type Transporter } from 'nodemailer';
 import { env } from '../config/env.js';
 import { formatBrazzavilleDateTime } from '../lib/dates.js';
 import { logger } from '../lib/logger.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 
 export type NotificationType =
   | 'document_submitted'
@@ -45,7 +45,7 @@ export async function notify(userIds: string[], payload: NotificationPayload): P
     dedupe_key: payload.dedupeKey ?? null,
   }));
   // Doublons ignorés : seules les notifications réellement créées sont renvoyées (et envoyées par email).
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('notifications')
     .upsert(rows, { onConflict: 'user_id,dedupe_key', ignoreDuplicates: true })
     .select('id, user_id');
@@ -53,7 +53,7 @@ export async function notify(userIds: string[], payload: NotificationPayload): P
   const created = data as { id: string; user_id: string }[];
 
   if (payload.email && created.length > 0) {
-    const { data: profiles, error: profileError } = await supabaseAdmin
+    const { data: profiles, error: profileError } = await db
       .from('profiles')
       .select('id, email')
       .in('id', created.map((row) => row.user_id))
@@ -72,7 +72,7 @@ export async function notify(userIds: string[], payload: NotificationPayload): P
           .join('\n\n'),
       }));
     if (outbox.length > 0) {
-      const { error: outboxError } = await supabaseAdmin.from('email_outbox').insert(outbox);
+      const { error: outboxError } = await db.from('email_outbox').insert(outbox);
       if (outboxError) throw outboxError;
     }
   }
@@ -90,8 +90,8 @@ export async function notifySafely(userIds: string[], payload: NotificationPaylo
 
 export async function listNotifications(userId: string) {
   const [list, unread] = await Promise.all([
-    supabaseAdmin.from('notifications').select('id, type, title, body, link, read_at, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
-    supabaseAdmin.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', userId).is('read_at', null),
+    db.from('notifications').select('id, type, title, body, link, read_at, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
+    db.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', userId).is('read_at', null),
   ]);
   if (list.error) throw list.error;
   if (unread.error) throw unread.error;
@@ -110,20 +110,20 @@ export async function listNotifications(userId: string) {
 }
 
 export async function markNotificationsRead(userId: string, ids: string[] | undefined) {
-  let query = supabaseAdmin.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', userId).is('read_at', null);
+  let query = db.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', userId).is('read_at', null);
   if (ids) query = query.in('id', ids);
   const { error } = await query;
   if (error) throw error;
 }
 
 export async function getEmailPreference(userId: string): Promise<boolean> {
-  const { data, error } = await supabaseAdmin.from('profiles').select('email_notifications').eq('id', userId).single();
+  const { data, error } = await db.from('profiles').select('email_notifications').eq('id', userId).single();
   if (error) throw error;
   return data.email_notifications as boolean;
 }
 
 export async function setEmailPreference(userId: string, enabled: boolean): Promise<boolean> {
-  const { error } = await supabaseAdmin.from('profiles').update({ email_notifications: enabled }).eq('id', userId);
+  const { error } = await db.from('profiles').update({ email_notifications: enabled }).eq('id', userId);
   if (error) throw error;
   return enabled;
 }
@@ -142,7 +142,7 @@ function getTransporter(): Transporter | null {
 
 export async function processEmailOutbox(limit = 20): Promise<{ sent: number; failed: number; skipped: number }> {
   const result = { sent: 0, failed: 0, skipped: 0 };
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('email_outbox')
     .select('id, to_email, subject, body_text, attempts')
     .eq('status', 'pending')
@@ -154,13 +154,13 @@ export async function processEmailOutbox(limit = 20): Promise<{ sent: number; fa
   const mailer = getTransporter();
   for (const row of data as { id: string; to_email: string; subject: string; body_text: string; attempts: number }[]) {
     if (!mailer) {
-      await supabaseAdmin.from('email_outbox').update({ status: 'skipped', last_error: 'SMTP non configuré' }).eq('id', row.id).eq('status', 'pending');
+      await db.from('email_outbox').update({ status: 'skipped', last_error: 'SMTP non configuré' }).eq('id', row.id).eq('status', 'pending');
       result.skipped += 1;
       continue;
     }
 
     // Réservation : une seule instance envoie un email donné.
-    const { data: claimed } = await supabaseAdmin
+    const { data: claimed } = await db
       .from('email_outbox')
       .update({ attempts: row.attempts + 1, next_attempt_at: new Date(Date.now() + 10 * 60_000).toISOString() })
       .eq('id', row.id)
@@ -172,12 +172,12 @@ export async function processEmailOutbox(limit = 20): Promise<{ sent: number; fa
 
     try {
       await mailer.sendMail({ from: env.EMAIL_FROM, to: row.to_email, subject: row.subject, text: row.body_text });
-      await supabaseAdmin.from('email_outbox').update({ status: 'sent', sent_at: new Date().toISOString(), last_error: null }).eq('id', row.id);
+      await db.from('email_outbox').update({ status: 'sent', sent_at: new Date().toISOString(), last_error: null }).eq('id', row.id);
       result.sent += 1;
     } catch (err) {
       const attempts = row.attempts + 1;
       const finalFailure = attempts >= MAX_EMAIL_ATTEMPTS;
-      await supabaseAdmin
+      await db
         .from('email_outbox')
         .update({
           status: finalFailure ? 'failed' : 'pending',
@@ -199,7 +199,7 @@ export async function processEmailOutbox(limit = 20): Promise<{ sent: number; fa
 // Rappel d'expiration (§11.1) : une seule notification par document et par date d'échéance.
 export async function sweepExpiringDocuments(today = new Date()): Promise<number> {
   const horizon = new Date(today.getTime() + 30 * 86_400_000).toISOString().slice(0, 10);
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('student_documents')
     .select('id, student_id, expires_at, document_types(label)')
     .not('expires_at', 'is', null)
@@ -222,7 +222,7 @@ export async function sweepExpiringDocuments(today = new Date()): Promise<number
       dedupeKey: `document_expiring:${row.id}:${row.expires_at}`,
       email: true,
     });
-    await supabaseAdmin.from('student_documents').update({ expiry_notified_at: new Date().toISOString() }).eq('id', row.id);
+    await db.from('student_documents').update({ expiry_notified_at: new Date().toISOString() }).eq('id', row.id);
     count += 1;
   }
   return count;
@@ -230,7 +230,7 @@ export async function sweepExpiringDocuments(today = new Date()): Promise<number
 
 // Relances prospects arrivées à échéance (EF-62) : au responsable, sinon à tous les admins.
 export async function sweepLeadFollowUps(now = new Date()): Promise<number> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('leads')
     .select('id, full_name, next_follow_up_at, assigned_to')
     .lte('next_follow_up_at', now.toISOString())
@@ -240,7 +240,7 @@ export async function sweepLeadFollowUps(now = new Date()): Promise<number> {
   const leads = data as { id: string; full_name: string; next_follow_up_at: string; assigned_to: string | null }[];
   if (leads.length === 0) return 0;
 
-  const { data: admins, error: adminError } = await supabaseAdmin.from('profiles').select('id').eq('role', 'admin').eq('status', 'active');
+  const { data: admins, error: adminError } = await db.from('profiles').select('id').eq('role', 'admin').eq('status', 'active');
   if (adminError) throw adminError;
   const adminIds = (admins as { id: string }[]).map((admin) => admin.id);
 
@@ -269,7 +269,7 @@ export function weekStartKey(now: Date): string {
 
 // §15 « rappel de cours » : séances des classes actives qui commencent dans les 24 heures, une fois par horaire.
 export async function sweepClassSessionReminders(now = new Date()): Promise<number> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('class_sessions')
     .select('id, class_id, title, starts_at, location, classes!inner(is_active)')
     .eq('classes.is_active', true)
@@ -280,7 +280,7 @@ export async function sweepClassSessionReminders(now = new Date()): Promise<numb
   const sessions = data as unknown as { id: string; class_id: string; title: string; starts_at: string; location: string | null }[];
   if (sessions.length === 0) return 0;
 
-  const { data: members, error: membersError } = await supabaseAdmin
+  const { data: members, error: membersError } = await db
     .from('class_students')
     .select('class_id, student_id, profiles!inner(status)')
     .in('class_id', [...new Set(sessions.map((session) => session.class_id))])
@@ -308,15 +308,15 @@ export async function sweepClassSessionReminders(now = new Date()): Promise<numb
 
 // §15 « simulation recommandée » : au plus une fois par semaine, aux étudiants sans simulation terminée depuis 7 jours.
 export async function sweepSimulationRecommendations(now = new Date()): Promise<number> {
-  const { count: activeTemplates, error: templateError } = await supabaseAdmin.from('test_templates').select('id', { count: 'exact', head: true }).eq('is_active', true);
+  const { count: activeTemplates, error: templateError } = await db.from('test_templates').select('id', { count: 'exact', head: true }).eq('is_active', true);
   if (templateError) throw templateError;
   if (!activeTemplates) return 0;
 
   const since = new Date(now.getTime() - 7 * DAY_MS).toISOString();
   const [students, recent] = await Promise.all([
     // Comptes récents exclus : laisser une semaine avant la première recommandation.
-    supabaseAdmin.from('profiles').select('id').eq('role', 'student').eq('status', 'active').eq('must_change_password', false).lt('created_at', since).limit(2000),
-    supabaseAdmin.from('simulations').select('student_id').eq('status', 'completed').gte('completed_at', since).limit(5000),
+    db.from('profiles').select('id').eq('role', 'student').eq('status', 'active').eq('must_change_password', false).lt('created_at', since).limit(2000),
+    db.from('simulations').select('student_id').eq('status', 'completed').gte('completed_at', since).limit(5000),
   ]);
   if (students.error) throw students.error;
   if (recent.error) throw recent.error;

@@ -1,7 +1,7 @@
 import { formatBrazzavilleDateTime } from '../lib/dates.js';
 import { HttpError } from '../lib/http-error.js';
 import { logger } from '../lib/logger.js';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { db } from '../lib/db/index.js';
 import type { AuthContext } from '../middleware/auth.js';
 import { assertCanManageClass, visibleClassIds } from './access.js';
 import { recordAudit } from './audit.js';
@@ -28,7 +28,7 @@ export async function listClassSessions(auth: AuthContext, range: { from?: strin
   const from = range.from ?? new Date(Date.now() - DAY_MS).toISOString();
   const to = range.to ?? new Date(Date.now() + 60 * DAY_MS).toISOString();
 
-  let query = supabaseAdmin
+  let query = db
     .from('class_sessions')
     .select('id, class_id, title, starts_at, ends_at, location, notes, classes(name)')
     .gte('starts_at', from)
@@ -69,7 +69,7 @@ function assertDuration(input: Pick<ClassSessionInput, 'startsAt' | 'endsAt'>) {
 
 // Étudiants actifs d'une classe : destinataires des notifications de séance.
 export async function activeClassStudentIds(classId: string): Promise<string[]> {
-  const { data, error } = await supabaseAdmin.from('class_students').select('student_id, profiles!inner(status)').eq('class_id', classId).eq('profiles.status', 'active');
+  const { data, error } = await db.from('class_students').select('student_id, profiles!inner(status)').eq('class_id', classId).eq('profiles.status', 'active');
   if (error) throw error;
   return (data as unknown as { student_id: string }[]).map((row) => row.student_id);
 }
@@ -95,7 +95,7 @@ async function notifyClassSession(classId: string, session: { id: string; title:
 export async function createClassSession(auth: AuthContext, input: ClassSessionInput) {
   assertDuration(input);
   await assertCanManageClass(auth, input.classId);
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from('class_sessions')
     .insert({
       class_id: input.classId,
@@ -115,7 +115,7 @@ export async function createClassSession(auth: AuthContext, input: ClassSessionI
 }
 
 async function loadManageableSession(auth: AuthContext, id: string) {
-  const { data, error } = await supabaseAdmin.from('class_sessions').select('id, class_id, starts_at').eq('id', id).maybeSingle();
+  const { data, error } = await db.from('class_sessions').select('id, class_id, starts_at').eq('id', id).maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(404, 'class_session_not_found', 'Séance introuvable.');
   await assertCanManageClass(auth, data.class_id as string);
@@ -126,7 +126,7 @@ export async function updateClassSession(auth: AuthContext, id: string, input: C
   assertDuration(input);
   const current = await loadManageableSession(auth, id);
   if (input.classId !== current.class_id) await assertCanManageClass(auth, input.classId);
-  const { error } = await supabaseAdmin
+  const { error } = await db
     .from('class_sessions')
     .update({ class_id: input.classId, title: input.title, starts_at: input.startsAt, ends_at: input.endsAt, location: input.location ?? null, notes: input.notes ?? null })
     .eq('id', id);
@@ -140,7 +140,7 @@ export async function updateClassSession(auth: AuthContext, id: string, input: C
 
 export async function deleteClassSession(auth: AuthContext, id: string) {
   await loadManageableSession(auth, id);
-  const { error } = await supabaseAdmin.from('class_sessions').delete().eq('id', id);
+  const { error } = await db.from('class_sessions').delete().eq('id', id);
   if (error) throw error;
   await recordAudit({ actorId: auth.userId, action: 'class_session.delete', entityType: 'class_session', entityId: id });
 }
