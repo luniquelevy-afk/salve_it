@@ -14,12 +14,15 @@ services:
       - key: NODE_ENV
         value: production
       - key: AI_PROVIDER
-        value: gemini
-      # Palier payant obligatoire en production (données de visa = personnelles, ENF-02).
-      - key: GEMINI_PAID_TIER
-        value: "true"
-      - key: GEMINI_MODEL
-        value: gemini-3.8-flash
+        value: nvidia
+      - key: NVIDIA_MODEL
+        value: meta/llama-3.3-70b-instruct
+      # true uniquement avec un accès de production NVIDIA (AI Enterprise ou NIM auto-hébergé) :
+      # l'essai gratuit interdit les données personnelles (entretiens de visa, ENF-02).
+      - key: NVIDIA_PRODUCTION_ACCESS
+        sync: false
+      - key: NVIDIA_BASE_URL
+        sync: false
       - key: REQUIRE_ADMIN_MFA
         value: "true"
       # Secrets et valeurs propres à l'environnement — à renseigner dans le tableau de bord.
@@ -28,11 +31,11 @@ services:
       # Compte de service Firebase (JSON ou base64) : Firestore, Auth et URL signées Storage.
       - key: FIREBASE_SERVICE_ACCOUNT
         sync: false
-      - key: GEMINI_API_KEY
+      - key: NVIDIA_API_KEY
         sync: false
-      - key: GEMINI_INPUT_PRICE_PER_MTOK
+      - key: NVIDIA_INPUT_PRICE_PER_MTOK
         sync: false
-      - key: GEMINI_OUTPUT_PRICE_PER_MTOK
+      - key: NVIDIA_OUTPUT_PRICE_PER_MTOK
         sync: false
       # Origine(s) autorisée(s) CORS = domaine Vercel du frontend (séparées par des virgules).
       - key: CORS_ORIGINS

@@ -39,7 +39,17 @@ const schema = z
 
     // ── IA (clés confinées au backend, CDC §17.2) ──
     // fake : agent déterministe pour développer sans clé ni coût (interdit en production).
-    AI_PROVIDER: z.enum(['gemini', 'claude', 'fake']).default('gemini'),
+    // nvidia (défaut) : API NVIDIA NIM compatible OpenAI ; gemini et claude restent disponibles.
+    AI_PROVIDER: z.enum(['nvidia', 'gemini', 'claude', 'fake']).default('nvidia'),
+    NVIDIA_API_KEY: optionalSecret,
+    // Catalogue hébergé par défaut ; un NIM auto-hébergé ou sous licence AI Enterprise se branche ici.
+    NVIDIA_BASE_URL: z.url().default('https://integrate.api.nvidia.com/v1'),
+    NVIDIA_MODEL: z.string().trim().min(1).default('meta/llama-3.3-70b-instruct'),
+    // L'essai gratuit (build.nvidia.com) interdit la production et les données personnelles :
+    // true uniquement avec un accès de production (licence NVIDIA AI Enterprise ou NIM auto-hébergé).
+    NVIDIA_PRODUCTION_ACCESS: flag('false'),
+    NVIDIA_INPUT_PRICE_PER_MTOK: z.coerce.number().min(0).default(0),
+    NVIDIA_OUTPUT_PRICE_PER_MTOK: z.coerce.number().min(0).default(0),
     GEMINI_API_KEY: optionalSecret,
     GEMINI_MODEL: z.string().trim().min(1).default('gemini-3.8-flash'),
     // Palier payant Google AI : contenu non réutilisé pour améliorer les produits Google.
@@ -79,6 +89,15 @@ const schema = z
     }
     // Conditions du palier gratuit Gemini : « Do not submit sensitive, confidential, or personal
     // information to the Unpaid Services ». Les entretiens de visa sont des données sensibles (ENF-02).
+    // Conditions de l'essai API NVIDIA : évaluation uniquement, sans production ni données personnelles
+    // (les entretiens de visa en contiennent, ENF-02).
+    if (value.AI_PROVIDER === 'nvidia' && !value.NVIDIA_PRODUCTION_ACCESS) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['NVIDIA_PRODUCTION_ACCESS'],
+        message: "En production, NVIDIA exige un accès de production (AI Enterprise ou NIM auto-hébergé) : l'essai gratuit interdit les données personnelles.",
+      });
+    }
     if (value.AI_PROVIDER === 'gemini' && !value.GEMINI_PAID_TIER) {
       ctx.addIssue({
         code: 'custom',

@@ -1,6 +1,6 @@
 import type { QuestionVariantsOutput } from './question-variants.js';
 
-export type AiProviderName = 'gemini' | 'claude' | 'fake';
+export type AiProviderName = 'nvidia' | 'gemini' | 'claude' | 'fake';
 
 export type AiErrorKind = 'unavailable' | 'rate_limited' | 'refusal' | 'invalid_output' | 'upstream';
 

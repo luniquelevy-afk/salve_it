@@ -3,6 +3,7 @@ import { env } from '../config/env.js';
 import { claudeProvider } from './ai-claude.js';
 import { fakeProvider } from './ai-fake.js';
 import { geminiProvider } from './ai-gemini.js';
+import { nvidiaProvider } from './ai-nvidia.js';
 import type { AiProviderClient, AiUsage, ConsulTurn, ConversationTurn } from './ai-types.js';
 import type { ReportOutput } from './embassy-prompts.js';
 import type { QuestionVariantsOutput } from './question-variants.js';
@@ -11,6 +12,7 @@ export { AiError } from './ai-types.js';
 export type { AiUsage, ConsulTurn, ConversationTurn } from './ai-types.js';
 
 const PROVIDERS: Record<typeof env.AI_PROVIDER, AiProviderClient<ReportOutput>> = {
+  nvidia: nvidiaProvider,
   gemini: geminiProvider,
   claude: claudeProvider,
   fake: fakeProvider,

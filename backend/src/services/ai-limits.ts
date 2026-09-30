@@ -94,7 +94,10 @@ export async function getAiSettings() {
     provider,
     model: activeModel(),
     // Palier gratuit Gemini et agent factice : coûts estimés nuls, les plafonds de coût n'agissent pas.
-    costTracked: provider === 'claude' || (provider === 'gemini' && env.GEMINI_PAID_TIER && (env.GEMINI_INPUT_PRICE_PER_MTOK > 0 || env.GEMINI_OUTPUT_PRICE_PER_MTOK > 0)),
+    costTracked:
+      provider === 'claude' ||
+      (provider === 'nvidia' && (env.NVIDIA_INPUT_PRICE_PER_MTOK > 0 || env.NVIDIA_OUTPUT_PRICE_PER_MTOK > 0)) ||
+      (provider === 'gemini' && env.GEMINI_PAID_TIER && (env.GEMINI_INPUT_PRICE_PER_MTOK > 0 || env.GEMINI_OUTPUT_PRICE_PER_MTOK > 0)),
     defaults: serverDefaults(),
     settings: values,
     effective: mergeLimits(serverDefaults(), values, null),

@@ -13,6 +13,9 @@ createApp().listen(env.PORT, () => {
     { port: env.PORT, aiProvider: activeProviderName(), aiModel: activeModel(), aiConfigured: isAiConfigured() },
     'api_started',
   );
+  if (env.AI_PROVIDER === 'nvidia' && !env.NVIDIA_PRODUCTION_ACCESS) {
+    logger.warn('nvidia_trial: essai API NVIDIA réservé à l’évaluation avec des données fictives (conditions NVIDIA API Trial)');
+  }
   if (env.AI_PROVIDER === 'gemini' && !env.GEMINI_PAID_TIER) {
     logger.warn('gemini_free_tier: réservé au développement avec des données fictives (conditions Google du palier gratuit)');
   }
