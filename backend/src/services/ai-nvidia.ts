@@ -63,11 +63,22 @@ export function toNvidiaMessages(turns: ConversationTurn[]): ChatMessage[] {
   });
 }
 
-function toUsage(usage: ChatCompletion['usage']): AiUsage {
+// Modèle et niveau de raisonnement d'un appel : tours d'entretien rapides, rapport et variantes soignés.
+interface CallOptions {
+  model: string;
+  reasoningEffort: string | null;
+  // Annulation (requête de secours devenue inutile).
+  signal?: AbortSignal;
+}
+
+const turnCall = (): CallOptions => ({ model: env.NVIDIA_TURN_MODEL, reasoningEffort: env.NVIDIA_TURN_REASONING_EFFORT ?? null });
+const deepCall = (): CallOptions => ({ model: env.NVIDIA_MODEL, reasoningEffort: null });
+
+function toUsage(usage: ChatCompletion['usage'], model: string): AiUsage {
   const inputTokens = usage?.prompt_tokens ?? 0;
   const outputTokens = usage?.completion_tokens ?? 0;
   return {
-    model: env.NVIDIA_MODEL,
+    model,
     inputTokens,
     outputTokens,
     cacheReadInputTokens: 0,
@@ -85,18 +96,29 @@ function addUsage(a: AiUsage, b: AiUsage): AiUsage {
   };
 }
 
-// Modèles qui refusent response_format : mémorisés pour ne plus l'envoyer.
+// Modèles qui refusent response_format ou reasoning_effort : mémorisés pour ne plus les envoyer.
 const noStructuredOutput = new Set<string>();
+const noReasoningEffort = new Set<string>();
 
-async function complete(operation: string, messages: ChatMessage[], schema: z.ZodType, maxTokens: number, attempt = 0): Promise<{ text: string; usage: AiUsage }> {
+async function complete(
+  operation: string,
+  messages: ChatMessage[],
+  schema: z.ZodType,
+  maxTokens: number,
+  call: CallOptions,
+  attempt = 0,
+): Promise<{ text: string; usage: AiUsage }> {
   if (!env.NVIDIA_API_KEY) throw new AiError('unavailable', 'NVIDIA_API_KEY non configurée');
-  const structured = !noStructuredOutput.has(env.NVIDIA_MODEL);
+  const structured = !noStructuredOutput.has(call.model);
+  const reasoning = call.reasoningEffort && !noReasoningEffort.has(call.model) ? call.reasoningEffort : null;
   const body = {
-    model: env.NVIDIA_MODEL,
+    model: call.model,
     messages,
     temperature: 0.4,
     max_tokens: maxTokens,
     stream: false,
+    // Raisonnement réduit : latence divisée par 10 à 20 sur les modèles à raisonnement du catalogue.
+    ...(reasoning ? { reasoning_effort: reasoning } : {}),
     ...(structured ? { response_format: { type: 'json_schema', json_schema: { name: operation, schema: toJsonSchema(schema) } } } : {}),
   };
 
@@ -106,24 +128,31 @@ async function complete(operation: string, messages: ChatMessage[], schema: z.Zo
       method: 'POST',
       headers: { Authorization: `Bearer ${env.NVIDIA_API_KEY}`, 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(TIMEOUT_MS[operation] ?? 120_000),
+      signal: call.signal ? AbortSignal.any([call.signal, AbortSignal.timeout(TIMEOUT_MS[operation] ?? 120_000)]) : AbortSignal.timeout(TIMEOUT_MS[operation] ?? 120_000),
     });
   } catch (err) {
+    if (call.signal?.aborted) throw new AiError('upstream', `${operation}: requête annulée`);
     logger.error({ operation, message: err instanceof Error ? err.message : undefined }, 'nvidia_network_error');
     throw new AiError('upstream', `${operation}: NVIDIA injoignable`);
   }
 
   if (!response.ok) {
     const detail = (await response.text().catch(() => '')).slice(0, 300);
+    if (response.status === 400 && reasoning && /reasoning/i.test(detail)) {
+      noReasoningEffort.add(call.model);
+      logger.warn({ operation, model: call.model }, 'nvidia_reasoning_effort_unsupported');
+      return complete(operation, messages, schema, maxTokens, call);
+    }
     if (response.status === 400 && structured && /response_format|json_schema|guided/i.test(detail)) {
-      noStructuredOutput.add(env.NVIDIA_MODEL);
-      logger.warn({ operation, model: env.NVIDIA_MODEL }, 'nvidia_structured_output_unsupported');
-      return complete(operation, messages, schema, maxTokens);
+      noStructuredOutput.add(call.model);
+      logger.warn({ operation, model: call.model }, 'nvidia_structured_output_unsupported');
+      return complete(operation, messages, schema, maxTokens, call);
     }
     if (TRANSIENT_STATUSES.has(response.status) && attempt < RETRY_DELAYS_MS.length) {
       logger.warn({ operation, status: response.status, attempt: attempt + 1 }, 'nvidia_retry');
       await sleep(RETRY_DELAYS_MS[attempt] as number);
-      return complete(operation, messages, schema, maxTokens, attempt + 1);
+      if (call.signal?.aborted) throw new AiError('upstream', `${operation}: requête annulée`);
+      return complete(operation, messages, schema, maxTokens, call, attempt + 1);
     }
     if (response.status === 429) throw new AiError('rate_limited', `${operation}: quota NVIDIA atteint`);
     if (response.status === 401 || response.status === 403) {
@@ -140,29 +169,29 @@ async function complete(operation: string, messages: ChatMessage[], schema: z.Zo
   if (!text.trim() && structured) {
     // Certains modèles (ex. gpt-oss) renvoient un contenu vide avec response_format en conversation :
     // on le désactive pour ce modèle et on relance sans.
-    noStructuredOutput.add(env.NVIDIA_MODEL);
-    logger.warn({ operation, model: env.NVIDIA_MODEL }, 'nvidia_structured_output_empty');
-    return complete(operation, messages, schema, maxTokens, attempt);
+    noStructuredOutput.add(call.model);
+    logger.warn({ operation, model: call.model }, 'nvidia_structured_output_empty');
+    return complete(operation, messages, schema, maxTokens, call, attempt);
   }
   if (!text.trim()) {
     // Modèle à raisonnement : budget de tokens épuisé avant la réponse.
     logger.warn({ operation, finishReason: choice?.finish_reason, reasoning: Boolean(choice?.message?.reasoning_content) }, 'nvidia_empty_output');
     throw new AiError('invalid_output', `${operation}: réponse vide${choice?.finish_reason === 'length' ? ' (limite de tokens atteinte)' : ''}`);
   }
-  return { text, usage: toUsage(completion.usage) };
+  return { text, usage: toUsage(completion.usage, call.model) };
 }
 
 // Une seconde tentative, avec l'erreur rappelée au modèle, si la réponse est hors schéma.
 async function generate<S extends z.ZodType>(
   operation: string,
-  request: { system: string; messages: ChatMessage[]; schema: S; maxTokens: number },
+  request: { system: string; messages: ChatMessage[]; schema: S; maxTokens: number; call: CallOptions },
 ): Promise<{ output: z.infer<S>; text: string; usage: AiUsage }> {
   const messages: ChatMessage[] = [{ role: 'system', content: request.system + schemaInstruction(request.schema) }, ...request.messages];
   let usage: AiUsage | null = null;
   for (let attempt = 1; attempt <= 2; attempt++) {
     let result: { text: string; usage: AiUsage };
     try {
-      result = await complete(operation, messages, request.schema, request.maxTokens);
+      result = await complete(operation, messages, request.schema, request.maxTokens, request.call);
     } catch (err) {
       // Réponse vide : relancée comme une réponse hors schéma.
       if (err instanceof AiError && err.kind === 'invalid_output' && attempt < 2) continue;
@@ -183,18 +212,73 @@ async function generate<S extends z.ZodType>(
   throw new AiError('invalid_output', `${operation}: réponse hors schéma`);
 }
 
+// Requête de secours (« hedging ») : si le modèle principal tarde (file d'attente de l'infrastructure
+// partagée), la même question part vers le modèle de secours ; la première réponse valide l'emporte
+// et l'autre requête est annulée. Pointes mesurées à 20 s ramenées sous ~7 s.
+export async function hedged<T>(
+  primary: (signal: AbortSignal) => Promise<T>,
+  fallback: ((signal: AbortSignal) => Promise<T>) | null,
+  delayMs: number,
+): Promise<T> {
+  if (!fallback) return primary(new AbortController().signal);
+  const primaryAbort = new AbortController();
+  const fallbackAbort = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const failures: unknown[] = [];
+
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    let pending = 1;
+    const win = (value: T, loser: AbortController) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      loser.abort();
+      resolve(value);
+    };
+    const lose = (err: unknown, startFallbackNow: boolean) => {
+      failures.push(err);
+      pending--;
+      if (settled) return;
+      if (startFallbackNow && timer) {
+        clearTimeout(timer);
+        launchFallback();
+      } else if (pending === 0) {
+        settled = true;
+        reject(failures[0]);
+      }
+    };
+    const launchFallback = () => {
+      timer = undefined;
+      pending++;
+      fallback(fallbackAbort.signal).then((value) => win(value, primaryAbort), (err) => lose(err, false));
+    };
+    primary(primaryAbort.signal).then((value) => win(value, fallbackAbort), (err) => lose(err, true));
+    timer = setTimeout(launchFallback, delayMs);
+  });
+}
+
 export const nvidiaProvider: AiProviderClient<ReportOutput> = {
   name: 'nvidia',
-  model: () => env.NVIDIA_MODEL,
+  // Modèle de l'entretien (enregistré sur la session) ; le rapport journalise le sien dans ai_usage_logs.
+  model: () => env.NVIDIA_TURN_MODEL,
   isConfigured: () => Boolean(env.NVIDIA_API_KEY),
 
   async runConsulTurn(turns) {
-    const { output, text, usage } = await generate('embassy_turn', {
-      system: CONSUL_SYSTEM_PROMPT,
-      messages: toNvidiaMessages(turns),
-      schema: consulTurnSchema,
-      maxTokens: 1500,
-    });
+    const run = (model: string) => (signal: AbortSignal) =>
+      generate('embassy_turn', {
+        system: CONSUL_SYSTEM_PROMPT,
+        messages: toNvidiaMessages(turns),
+        schema: consulTurnSchema,
+        maxTokens: 1500,
+        call: { ...turnCall(), model, signal },
+      });
+    const fallbackModel = env.NVIDIA_TURN_FALLBACK_MODEL;
+    const { output, text, usage } = await hedged(
+      run(env.NVIDIA_TURN_MODEL),
+      fallbackModel && fallbackModel !== env.NVIDIA_TURN_MODEL ? run(fallbackModel) : null,
+      env.NVIDIA_TURN_HEDGE_MS,
+    );
     if (!output.message.trim()) throw new AiError('invalid_output', 'embassy_turn: message vide');
     return { message: output.message.trim(), endInterview: output.end_interview, apiContent: { provider: 'nvidia', data: text }, usage };
   },
@@ -205,6 +289,7 @@ export const nvidiaProvider: AiProviderClient<ReportOutput> = {
       messages: [{ role: 'user', content: request }],
       schema: reportOutputSchema,
       maxTokens: 8000,
+      call: deepCall(),
     });
     return { report: output, usage };
   },
@@ -215,6 +300,7 @@ export const nvidiaProvider: AiProviderClient<ReportOutput> = {
       messages: [{ role: 'user', content: request }],
       schema: questionVariantsSchema,
       maxTokens: 8000,
+      call: deepCall(),
     });
     return { output, usage };
   },

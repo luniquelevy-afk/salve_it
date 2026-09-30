@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 process.env.NVIDIA_API_KEY = 'nvapi-test';
 process.env.AI_PROVIDER = 'nvidia';
 
-const { extractJson, nvidiaProvider, toNvidiaMessages } = await import('../src/services/ai-nvidia.js');
+const { extractJson, hedged, nvidiaProvider, toNvidiaMessages } = await import('../src/services/ai-nvidia.js');
 const { AiError } = await import('../src/services/ai-types.js');
 
 function reply(content: string, status = 200) {
@@ -56,6 +56,19 @@ describe('nvidiaProvider', () => {
     expect(body.messages[0].role).toBe('system');
   });
 
+  it('tours : modèle rapide avec raisonnement réduit ; rapport : modèle soigné', async () => {
+    fetchMock.mockResolvedValueOnce(reply('{"message":"Bonjour","end_interview":false}'));
+    await nvidiaProvider.runConsulTurn([{ role: 'user', text: 'x' }]);
+    const turnBody = JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string);
+    expect(turnBody).toMatchObject({ model: 'nvidia/nemotron-3-super-120b-a12b', reasoning_effort: 'low' });
+
+    fetchMock.mockResolvedValueOnce(reply('pas du JSON')).mockResolvedValueOnce(reply('toujours pas'));
+    await expect(nvidiaProvider.runReport('transcription')).rejects.toMatchObject({ kind: 'invalid_output' });
+    const reportBody = JSON.parse((fetchMock.mock.calls[1] as [string, RequestInit])[1].body as string);
+    expect(reportBody.model).toBe('z-ai/glm-5.3-flash');
+    expect(reportBody.reasoning_effort).toBeUndefined();
+  });
+
   it('relance une fois avec l’erreur quand la réponse est hors schéma', async () => {
     fetchMock.mockResolvedValueOnce(reply('{"texte":"oups"}')).mockResolvedValueOnce(reply('{"message":"Parlez-moi de votre projet.","end_interview":false}'));
     const turn = await nvidiaProvider.runConsulTurn([{ role: 'user', text: 'Bonjour' }]);
@@ -79,10 +92,11 @@ describe('nvidiaProvider', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it('traduit les erreurs HTTP persistantes', { timeout: 20_000 }, async () => {
+  it('traduit les erreurs HTTP persistantes', { timeout: 40_000 }, async () => {
     fetchMock.mockImplementation(async () => reply('trop de requêtes', 429));
     await expect(nvidiaProvider.runConsulTurn([{ role: 'user', text: 'x' }])).rejects.toMatchObject({ kind: 'rate_limited' });
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    // 3 essais du modèle principal, puis 3 du modèle de secours.
+    expect(fetchMock).toHaveBeenCalledTimes(6);
     fetchMock.mockReset();
     fetchMock.mockImplementation(async () => reply('clé invalide', 401));
     await expect(nvidiaProvider.runConsulTurn([{ role: 'user', text: 'x' }])).rejects.toMatchObject({ kind: 'unavailable' });
@@ -93,5 +107,42 @@ describe('nvidiaProvider', () => {
     expect((await nvidiaProvider.runConsulTurn([{ role: 'user', text: 'x' }])).message).toBe('Reprenons.');
     // Le modèle a déjà perdu response_format (test précédent) : la relance vient de la boucle de validation.
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('hedged (requête de secours)', () => {
+  const after = <T>(ms: number, value: T, fail = false) => (signal: AbortSignal) =>
+    new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(() => (fail ? reject(new Error(String(value))) : resolve(value)), ms);
+      signal.addEventListener('abort', () => {
+        clearTimeout(timer);
+        reject(new Error('annulée'));
+      });
+    });
+
+  it('garde le principal quand il répond avant le délai', async () => {
+    const fallback = vi.fn(after(10, 'secours'));
+    await expect(hedged(after(10, 'principal'), fallback, 50)).resolves.toBe('principal');
+    expect(fallback).not.toHaveBeenCalled();
+  });
+
+  it('prend le secours quand le principal tarde, et annule le principal', async () => {
+    const aborted = vi.fn();
+    const slow = (signal: AbortSignal) => {
+      signal.addEventListener('abort', aborted);
+      return after(500, 'principal')(signal);
+    };
+    await expect(hedged(slow, after(10, 'secours'), 30)).resolves.toBe('secours');
+    expect(aborted).toHaveBeenCalled();
+  });
+
+  it('bascule immédiatement sur le secours si le principal échoue', async () => {
+    const started = Date.now();
+    await expect(hedged(after(5, 'panne', true), after(5, 'secours'), 1_000)).resolves.toBe('secours');
+    expect(Date.now() - started).toBeLessThan(500);
+  });
+
+  it('échoue si les deux échouent', async () => {
+    await expect(hedged(after(5, 'panne 1', true), after(5, 'panne 2', true), 1_000)).rejects.toThrow('panne 1');
   });
 });

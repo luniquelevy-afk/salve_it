@@ -44,8 +44,16 @@ const schema = z
     NVIDIA_API_KEY: optionalSecret,
     // Catalogue hébergé par défaut ; un NIM auto-hébergé ou sous licence AI Enterprise se branche ici.
     NVIDIA_BASE_URL: z.url().default('https://integrate.api.nvidia.com/v1'),
-    // Choisi après essai comparatif (qualité du français, respect du format) ; meta/llama-3.3-70b est retiré du catalogue.
+    // Rapport d'entretien et variantes de questions (tâches de fond : qualité avant vitesse).
+    // Choisi après essai comparatif ; meta/llama-3.3-70b est retiré du catalogue.
     NVIDIA_MODEL: z.string().trim().min(1).default('z-ai/glm-5.3-flash'),
+    // Tours de l'entretien (interactifs) : modèle rapide, raisonnement réduit (1 à 2 s au lieu de 20 à 30 s mesurés).
+    NVIDIA_TURN_MODEL: z.string().trim().min(1).default('nvidia/nemotron-3-super-120b-a12b'),
+    // Modèle de secours sollicité si le principal n'a pas répondu après NVIDIA_TURN_HEDGE_MS (vide = aucun).
+    NVIDIA_TURN_FALLBACK_MODEL: z.string().trim().default('openai/gpt-oss-20b').transform((value) => value || undefined),
+    NVIDIA_TURN_HEDGE_MS: z.coerce.number().int().min(1000).default(6000),
+    // low | medium | high ; vide = réglage du modèle.
+    NVIDIA_TURN_REASONING_EFFORT: z.enum(['low', 'medium', 'high', '']).default('low').transform((value) => value || undefined),
     // L'essai gratuit (build.nvidia.com) interdit la production et les données personnelles :
     // true uniquement avec un accès de production (licence NVIDIA AI Enterprise ou NIM auto-hébergé).
     NVIDIA_PRODUCTION_ACCESS: flag('false'),

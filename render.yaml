@@ -17,6 +17,12 @@ services:
         value: nvidia
       - key: NVIDIA_MODEL
         value: z-ai/glm-5.3-flash
+      - key: NVIDIA_TURN_MODEL
+        value: nvidia/nemotron-3-super-120b-a12b
+      - key: NVIDIA_TURN_REASONING_EFFORT
+        value: low
+      - key: NVIDIA_TURN_FALLBACK_MODEL
+        value: openai/gpt-oss-20b
       # true uniquement avec un accès de production NVIDIA (AI Enterprise ou NIM auto-hébergé) :
       # l'essai gratuit interdit les données personnelles (entretiens de visa, ENF-02).
       - key: NVIDIA_PRODUCTION_ACCESS
