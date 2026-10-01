@@ -88,6 +88,9 @@ export function App() {
             <Route element={<RequireAuth roles={['teacher', 'admin']} />}>
               <Route path="/banque-questions" element={<QuestionsPage />} />
               <Route path="/gestion/cours" element={<ManageCoursesPage />} />
+              <Route path="/vue-etudiant/cours" element={<CoursesPage />} />
+              <Route path="/vue-etudiant/cours/:id" element={<CoursePage />} />
+              <Route path="/vue-etudiant/exercices/:id" element={<ExercisePage />} />
               <Route path="/gestion/exercices" element={<ManageExercisesPage />} />
               <Route path="/classes" element={<ClassesPage />} />
               <Route path="/suivi/etudiants/:id" element={<StudentFollowUpPage />} />

@@ -148,6 +148,26 @@ export async function submitExerciseAttempt(studentId: string, exerciseId: strin
   return result;
 }
 
+// ── Aperçu « vue étudiant » (enseignant / admin) : exercice publié, corrigé sans enregistrer de tentative ──
+
+async function publishedExercise(exerciseId: string): Promise<ExerciseRow> {
+  const { data, error } = await db.from('exercises').select(ALL_COLUMNS).eq('id', exerciseId).eq('is_published', true).maybeSingle();
+  if (error) throw error;
+  if (!data) throw new HttpError(404, 'exercise_not_found', 'Exercice introuvable ou non publié.');
+  return data as ExerciseRow;
+}
+
+export async function previewExercise(exerciseId: string) {
+  return toPublicExercise(await publishedExercise(exerciseId));
+}
+
+export async function previewExerciseAttempt(exerciseId: string, answers: Record<string, string>) {
+  const row = await publishedExercise(exerciseId);
+  const result = gradeExercise(row.exercise_type, row.content, row.solution, answers);
+  if (result.maxScore === 0) throw new HttpError(422, 'exercise_empty', 'Cet exercice ne contient aucun élément à corriger.');
+  return result;
+}
+
 // ── Enseignant / admin ──────────────────────────────────────
 
 function canEdit(auth: AuthContext, row: Pick<ExerciseRow, 'created_by'>): boolean {

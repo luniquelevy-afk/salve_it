@@ -84,22 +84,41 @@ export async function getStudentCourse(studentId: string, courseId: string) {
   if (error) throw error;
   if (!data) throw new HttpError(404, 'course_not_found', 'Cours introuvable.');
 
-  const { data: exercises, error: exercisesError } = await db
+  return { course: toCourse(data as CourseRow), exercises: await publishedExercisesOf(courseId) };
+}
+
+async function publishedExercisesOf(courseId: string) {
+  const { data, error } = await db
     .from('exercises')
     .select('id, title, exercise_type')
     .eq('course_id', courseId)
     .eq('is_published', true)
     .order('title');
-  if (exercisesError) throw exercisesError;
+  if (error) throw error;
+  return (data as { id: string; title: string; exercise_type: string }[]).map((exercise) => ({
+    id: exercise.id,
+    title: exercise.title,
+    exerciseType: exercise.exercise_type,
+  }));
+}
 
-  return {
-    course: toCourse(data as CourseRow),
-    exercises: (exercises as { id: string; title: string; exercise_type: string }[]).map((exercise) => ({
-      id: exercise.id,
-      title: exercise.title,
-      exerciseType: exercise.exercise_type,
-    })),
-  };
+// ── Aperçu « vue étudiant » (enseignant / admin) ────────────
+// Cours publiés tels qu'un étudiant les voit, toutes classes confondues, en lecture seule.
+
+export async function previewCourses(filters: { level?: CefrLevel | 'all' | undefined; category?: string | undefined }) {
+  let query = db.from('courses').select(COURSE_COLUMNS).eq('is_published', true);
+  if (filters.level && filters.level !== 'all') query = query.eq('level', filters.level);
+  if (filters.category) query = query.eq('category', filters.category);
+  const { data, error } = await query.order('level').order('title');
+  if (error) throw error;
+  return { studentLevel: null, courses: (data as CourseRow[]).map(toCourse) };
+}
+
+export async function previewCourse(courseId: string) {
+  const { data, error } = await db.from('courses').select(COURSE_COLUMNS).eq('id', courseId).eq('is_published', true).maybeSingle();
+  if (error) throw error;
+  if (!data) throw new HttpError(404, 'course_not_found', 'Cours introuvable ou non publié.');
+  return { course: toCourse(data as CourseRow), exercises: await publishedExercisesOf(courseId) };
 }
 
 // ── Enseignant / admin (EF-24) ──────────────────────────────

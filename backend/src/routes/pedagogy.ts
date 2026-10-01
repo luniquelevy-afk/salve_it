@@ -19,7 +19,7 @@ import {
   updateClass,
   updateProgram,
 } from '../services/classes.js';
-import { createCourse, deleteCourse, getStudentCourse, listManagedCourses, listStudentCourses, updateCourse } from '../services/courses.js';
+import { createCourse, deleteCourse, getStudentCourse, listManagedCourses, listStudentCourses, previewCourse, previewCourses, updateCourse } from '../services/courses.js';
 import { exerciseInputSchema, studentAnswersSchema } from '../services/exercise-grading.js';
 import {
   createExercise,
@@ -27,6 +27,8 @@ import {
   getStudentExercise,
   listManagedExercises,
   listStudentExercises,
+  previewExercise,
+  previewExerciseAttempt,
   submitExerciseAttempt,
   updateExercise,
 } from '../services/exercises.js';
@@ -79,6 +81,15 @@ manageCoursesRouter.get('/', async (req, res) => {
   res.json({ courses: await listManagedCourses(authOf(req)) });
 });
 
+// Vue étudiant (aperçu en lecture seule).
+manageCoursesRouter.get('/preview', async (req, res) => {
+  res.json(await previewCourses(levelFilterSchema.parse(req.query)));
+});
+
+manageCoursesRouter.get('/preview/:id', async (req, res) => {
+  res.json(await previewCourse(idSchema.parse(req.params.id)));
+});
+
 manageCoursesRouter.post('/', writeLimiter, async (req, res) => {
   res.status(201).json({ course: await createCourse(authOf(req), courseSchema.parse(req.body)) });
 });
@@ -125,6 +136,16 @@ manageExercisesRouter.use(...staffOnly);
 
 manageExercisesRouter.get('/', async (req, res) => {
   res.json({ exercises: await listManagedExercises(authOf(req)) });
+});
+
+manageExercisesRouter.get('/preview/:id', async (req, res) => {
+  res.json({ exercise: await previewExercise(idSchema.parse(req.params.id)) });
+});
+
+// Correction sans tentative enregistrée : l'aperçu ne fausse pas les statistiques.
+manageExercisesRouter.post('/preview/:id/attempts', writeLimiter, async (req, res) => {
+  const { answers } = z.strictObject({ answers: studentAnswersSchema }).parse(req.body);
+  res.json(await previewExerciseAttempt(idSchema.parse(req.params.id), answers));
 });
 
 manageExercisesRouter.post('/', writeLimiter, async (req, res) => {

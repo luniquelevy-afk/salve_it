@@ -122,6 +122,33 @@ describe('parcours de bout en bout', () => {
     expect(admin.body.simulations.completed30).toBe(1);
   });
 
+  it('ouvre la vue étudiant au personnel : programme d’italien visible, correction sans tentative enregistrée', async () => {
+    const list = await request(app).get('/api/manage/courses/preview?level=A1').set(bearer(teacherToken));
+    expect(list.status).toBe(200);
+    const course = list.body.courses.find((item: { title: string }) => item.title.startsWith('A1-M02 — '));
+    expect(course).toBeDefined();
+    expect(list.body.courses.every((item: { level: string }) => item.level === 'A1')).toBe(true);
+
+    const detail = await request(app).get(`/api/manage/courses/preview/${course.id}`).set(bearer(teacherToken));
+    expect(detail.body.course.body).toContain('Dialogue');
+    const qcm = detail.body.exercises.find((item: { exerciseType: string }) => item.exerciseType === 'qcm');
+
+    const exercise = await request(app).get(`/api/manage/exercises/preview/${qcm.id}`).set(bearer(teacherToken));
+    expect(exercise.body.exercise.solution).toBeUndefined();
+    const graded = await request(app)
+      .post(`/api/manage/exercises/preview/${qcm.id}/attempts`)
+      .set(bearer(teacherToken))
+      .send({ answers: { q1: 'B', q2: 'A', q3: 'C', q4: 'A', q5: 'B', q6: 'C' } });
+    expect(graded.status).toBe(200);
+    expect(graded.body).toMatchObject({ score: 6, maxScore: 6 });
+
+    const { db } = await import('../../src/lib/db/index.js');
+    const { data: attempts } = await db.from('exercise_attempts').select('id').eq('exercise_id', qcm.id);
+    expect(attempts).toEqual([]);
+
+    expect((await request(app).get('/api/manage/courses/preview').set(bearer(studentToken))).status).toBe(403);
+  });
+
   it('sert le site public et enregistre un prospect', async () => {
     const site = await request(app).get('/api/public/site');
     expect(site.status).toBe(200);

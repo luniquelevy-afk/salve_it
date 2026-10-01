@@ -4,6 +4,8 @@ import { CourseContent } from '../../components/CourseContent';
 import { PronunciationAssistant } from '../../components/course/PronunciationAssistant';
 import { ErrorBanner } from '../../components/ErrorBanner';
 import { api, ApiError } from '../../lib/api';
+import { useStudentView } from '../../lib/student-view';
+import { StudentViewBanner } from '../../components/course/StudentViewBanner';
 import { collectItalianSnippets, parseMarkdown } from '../../lib/markdown';
 import { COURSE_TYPE_LABELS, EXERCISE_TYPE_LABELS, type Course, type ExerciseType } from '../../lib/types';
 
@@ -16,20 +18,21 @@ export function CoursePage() {
   const { id = '' } = useParams();
   const [data, setData] = useState<CourseResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const view = useStudentView();
   const body = data?.course.contentType === 'text' ? (data.course.body ?? '') : '';
   const words = useMemo(() => (body ? collectItalianSnippets(parseMarkdown(body)) : []), [body]);
 
   useEffect(() => {
-    api<CourseResponse>(`/api/courses/${id}`)
+    api<CourseResponse>(view.api.course(id))
       .then(setData)
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'Impossible de charger le cours.'));
-  }, [id]);
+  }, [id, view.api]);
 
   if (error) {
     return (
       <div className="space-y-3">
         <ErrorBanner message={error} />
-        <Link to="/etudiant/cours" className="btn-secondary">
+        <Link to={view.paths.courses} className="btn-secondary">
           Retour aux cours
         </Link>
       </div>
@@ -41,8 +44,9 @@ export function CoursePage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
+      <StudentViewBanner />
       <PronunciationAssistant words={words} />
-      <Link to="/etudiant/cours" className="text-sm text-verde-dark hover:underline">
+      <Link to={view.paths.courses} className="text-sm text-verde-dark hover:underline">
         ← Tous les cours
       </Link>
       <div>
@@ -63,7 +67,7 @@ export function CoursePage() {
         <section className="card space-y-2">
           <h2 className="font-semibold">S’entraîner</h2>
           {exercises.map((exercise) => (
-            <Link key={exercise.id} to={`/etudiant/exercices/${exercise.id}`} className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-2 hover:bg-stone-50">
+            <Link key={exercise.id} to={view.paths.exercise(exercise.id)} className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-2 hover:bg-stone-50">
               <span>{exercise.title}</span>
               <span className="text-xs text-stone-500">{EXERCISE_TYPE_LABELS[exercise.exerciseType]} →</span>
             </Link>

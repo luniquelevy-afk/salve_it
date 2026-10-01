@@ -4,6 +4,8 @@ import { api, ApiError } from '../../lib/api';
 import { CEFR_LEVELS, COURSE_TYPE_LABELS, type CefrLevel, type Course, type CourseContentType } from '../../lib/types';
 import { Icon } from '../public/landing-icon';
 import { SectionTabs } from '../../components/SectionTabs';
+import { StudentViewBanner } from '../../components/course/StudentViewBanner';
+import { useStudentView } from '../../lib/student-view';
 import { STUDENT_LEARNING_TABS } from '../../components/section-tabs';
 
 type LevelFilter = CefrLevel | 'all' | '';
@@ -22,16 +24,17 @@ export function CoursesPage() {
   const [category, setCategory] = useState('');
   const [data, setData] = useState<{ studentLevel: CefrLevel | null; courses: Course[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const view = useStudentView();
 
   useEffect(() => {
     const query = level ? `?level=${level}` : '';
-    api<{ studentLevel: CefrLevel | null; courses: Course[] }>(`/api/courses${query}`)
+    api<{ studentLevel: CefrLevel | null; courses: Course[] }>(`${view.api.courses}${query}`)
       .then((response) => {
         setData(response);
         setError(null);
       })
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'Impossible de charger les cours.'));
-  }, [level]);
+  }, [level, view.api.courses]);
 
   const categories = useMemo(() => [...new Set(data?.courses.map((course) => course.category) ?? [])].sort(), [data]);
   const courses = data?.courses.filter((course) => !category || course.category === category) ?? [];
@@ -39,7 +42,8 @@ export function CoursesPage() {
 
   return (
     <div className="cours space-y-8">
-      <SectionTabs tabs={STUDENT_LEARNING_TABS} label="Apprendre" />
+      <StudentViewBanner />
+      {!view.preview && <SectionTabs tabs={STUDENT_LEARNING_TABS} label="Apprendre" />}
       {/* En-tête */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
@@ -61,18 +65,20 @@ export function CoursesPage() {
             onChange={(e) => setLevel(e.target.value as LevelFilter)}
             className="rounded-xl border border-white/[0.1] bg-[#0D131F] px-3 py-2 text-xs font-medium text-slate-200 outline-none focus:border-[#2DD4BF] focus:ring-1 focus:ring-[#2DD4BF]"
           >
-            <option value="">Mon niveau</option>
-            <option value="all">Tous les niveaux</option>
+            <option value="">{view.preview ? 'Tous les niveaux' : 'Mon niveau'}</option>
+            {!view.preview && <option value="all">Tous les niveaux</option>}
             {CEFR_LEVELS.map((value) => (
               <option key={value} value={value}>{value}</option>
             ))}
           </select>
+          {!view.preview && (
           <Link
-            to="/etudiant/exercices"
+            to={view.paths.exercises}
             className="inline-flex items-center gap-1.5 rounded-xl bg-[#E2583E] px-4 py-2 text-xs font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#c9452d]"
           >
             <Icon name="solar:target-bold" size={14} /><span>Exercices</span>
           </Link>
+          )}
         </div>
       </div>
 
@@ -114,7 +120,7 @@ export function CoursesPage() {
           {courses.map((course) => (
             <Link
               key={course.id}
-              to={`/etudiant/cours/${course.id}`}
+              to={view.paths.course(course.id)}
               className="group flex flex-col justify-between space-y-5 rounded-3xl border border-white/[0.08] bg-[#0D131F] p-6 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:border-[#0E8368] hover:shadow-[0_20px_40px_rgba(14,131,104,0.2)]"
             >
               <div className="space-y-4">

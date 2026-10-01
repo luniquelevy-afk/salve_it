@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { ErrorBanner } from '../../components/ErrorBanner';
 import { PronunciationAssistant } from '../../components/course/PronunciationAssistant';
 import { api, ApiError } from '../../lib/api';
+import { useStudentView } from '../../lib/student-view';
+import { StudentViewBanner } from '../../components/course/StudentViewBanner';
 import { formatPercent } from '../../lib/format';
 import { EXERCISE_TYPE_LABELS, type ExerciseDetail, type GapFillContent, type GradeResult, type MatchingContent, type QcmContent } from '../../lib/types';
 
@@ -117,12 +119,13 @@ export function ExercisePage() {
   const [result, setResult] = useState<GradeResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const view = useStudentView();
 
   useEffect(() => {
-    api<{ exercise: ExerciseDetail }>(`/api/exercises/${id}`)
+    api<{ exercise: ExerciseDetail }>(view.api.exercise(id))
       .then((response) => setExercise(response.exercise))
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'Impossible de charger l’exercice.'));
-  }, [id]);
+  }, [id, view.api]);
 
   const setAnswer = (itemId: string, value: string) => setAnswers((current) => ({ ...current, [itemId]: value }));
 
@@ -133,7 +136,7 @@ export function ExercisePage() {
     setSubmitting(true);
     setError(null);
     try {
-      setResult(await api<GradeResult>(`/api/exercises/${id}/attempts`, { method: 'POST', body: { answers } }));
+      setResult(await api<GradeResult>(view.api.attempt(id), { method: 'POST', body: { answers } }));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Correction impossible. Vérifiez votre connexion.');
@@ -160,8 +163,9 @@ export function ExercisePage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
+      <StudentViewBanner />
       <PronunciationAssistant />
-      <Link to={exercise.courseId ? `/etudiant/cours/${exercise.courseId}` : '/etudiant/exercices'} className="text-sm text-verde-dark hover:underline">
+      <Link to={exercise.courseId ? view.paths.course(exercise.courseId) : view.paths.exercises} className="text-sm text-verde-dark hover:underline">
         ← Retour
       </Link>
       <div>

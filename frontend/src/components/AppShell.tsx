@@ -49,6 +49,7 @@ const NAV: Record<AppRole, NavSection[]> = {
       title: 'Contenus',
       items: [
         { to: '/gestion/cours', label: 'Cours et exercices', icon: '📚', also: ['/gestion/exercices'] },
+        { to: '/vue-etudiant/cours', label: 'Vue étudiant', icon: '👁️', also: ['/vue-etudiant'] },
         { to: '/banque-questions', label: 'Tests et questions', icon: '❓' },
       ],
     },
@@ -76,6 +77,7 @@ const NAV: Record<AppRole, NavSection[]> = {
         { to: '/classes', label: 'Classes', icon: '👥' },
         { to: '/banque-questions', label: 'Tests et questions', icon: '❓', also: ['/admin/modeles-de-test'] },
         { to: '/gestion/cours', label: 'Cours et exercices', icon: '📚', also: ['/gestion/exercices'] },
+        { to: '/vue-etudiant/cours', label: 'Vue étudiant', icon: '👁️', also: ['/vue-etudiant'] },
         { to: '/admin/documents', label: 'Documents', icon: '📄' },
         { to: '/annonces', label: 'Annonces', icon: '📣' },
       ],
