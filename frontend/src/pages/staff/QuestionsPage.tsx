@@ -18,13 +18,13 @@ interface Draft {
   explanation: string;
 }
 
-// Format TOLC : 5 options par défaut (CDC §1.1), ajustable de 2 à 6.
+// 4 options par défaut, ajustable de 2 à 6.
 const emptyDraft = (category = ''): Draft => ({
   id: null,
   category,
   difficulty: 1,
   questionText: '',
-  options: OPTION_KEYS.slice(0, 5).map((key) => ({ key, text: '' })),
+  options: OPTION_KEYS.slice(0, 4).map((key) => ({ key, text: '' })),
   correctAnswer: 'A',
   explanation: '',
 });

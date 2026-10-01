@@ -120,11 +120,11 @@ export function TestTemplatesPage() {
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <label className="label" htmlFor="t-code">Code</label>
-              <input id="t-code" className="input uppercase" required pattern="[A-Za-z0-9-]{2,40}" placeholder="TOLC-E" value={draft.code} onChange={(e) => setDraft({ ...draft, code: e.target.value })} />
+              <input id="t-code" className="input uppercase" required pattern="[A-Za-z0-9-]{2,40}" placeholder="ITALIEN-A2" value={draft.code} onChange={(e) => setDraft({ ...draft, code: e.target.value })} />
             </div>
             <div className="sm:col-span-2">
               <label className="label" htmlFor="t-name">Nom affiché</label>
-              <input id="t-name" className="input" required maxLength={160} placeholder="Simulation de type TOLC-E" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+              <input id="t-name" className="input" required maxLength={160} placeholder="Italien A2 — test de fin de niveau" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
             </div>
             <div className="sm:col-span-3">
               <label className="label" htmlFor="t-description">Description</label>
@@ -170,7 +170,7 @@ export function TestTemplatesPage() {
             </datalist>
             {draft.sections.map((section, index) => (
               <div key={index} className="grid gap-2 sm:grid-cols-[1fr_1fr_8rem_auto]">
-                <input className="input" required maxLength={120} placeholder="Nom (ex. Matematica)" aria-label={`Nom de la section ${index + 1}`} value={section.name} onChange={(e) => updateSection(index, { name: e.target.value })} />
+                <input className="input" required maxLength={120} placeholder="Nom (ex. Grammaire)" aria-label={`Nom de la section ${index + 1}`} value={section.name} onChange={(e) => updateSection(index, { name: e.target.value })} />
                 <input className="input" required maxLength={60} list="template-categories" placeholder="Catégorie de questions" aria-label={`Catégorie de la section ${index + 1}`} value={section.category} onChange={(e) => updateSection(index, { category: e.target.value })} />
                 <input type="number" min={1} max={200} className="input" required aria-label={`Nombre de questions de la section ${index + 1}`} value={section.questionCount} onChange={(e) => updateSection(index, { questionCount: Number(e.target.value) })} />
                 {draft.sections.length > 1 && (

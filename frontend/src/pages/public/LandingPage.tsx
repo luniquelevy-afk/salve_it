@@ -254,7 +254,7 @@ export function LandingPage() {
             <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
               {[
                 { icon: 'solar:user-speak-bold', title: 'Proximité', text: 'Un centre présent à Brazzaville, avec des enseignants qui connaissent votre réalité et vous accompagnent en personne.' },
-                { icon: 'solar:shield-check-bold', title: 'Rigueur', text: 'Une préparation exigeante et honnête : langue italienne, tests d’admission et clarté du discours, sans fausses promesses.' },
+                { icon: 'solar:shield-check-bold', title: 'Rigueur', text: 'Un enseignement exigeant et honnête de l’italien langue seconde (L2), de A1 à B2, sans fausses promesses.' },
                 { icon: 'solar:chart-square-bold', title: 'Progression', text: 'Un parcours structuré et mesurable, où chaque étape est suivie pour avancer sereinement vers votre objectif.' },
               ].map((value, i) => (
                 <div key={value.title} style={{ transitionDelay: `${i * 90}ms` }} className="reveal space-y-3 rounded-3xl border border-white/[0.08] bg-[#0D131F] p-6">
@@ -281,8 +281,8 @@ export function LandingPage() {
               deck via un top croissant) ; en remontant, l'empilement se défait à l'envers. */}
           <div className="relative">
             {[
-              { border: 'border-white/[0.1]', bg: 'bg-[#0D131F]', shadow: 'shadow-[0_-10px_30px_rgba(0,0,0,0.6)]', n: '01', tag: 'Évaluation Initiale', title: 'Comprendre son niveau sans biais', text: 'Situez précisément vos acquis en logique, mathématiques et langue italienne avant même de sélectionner vos universités en Italie.', icon: 'solar:chart-square-bold', img: cardEval },
-              { border: 'border-white/[0.12]', bg: 'bg-[#0F1726]', shadow: 'shadow-[0_-15px_35px_rgba(0,0,0,0.7)]', n: '02', tag: 'Méthodologie Spécifique', title: 'Réussir les tests CISIA / TOLC', text: "Maîtrisez le format chronométré et le système de pénalités propre aux examens d'admission des universités italiennes.", icon: 'solar:target-bold', img: cardTests },
+              { border: 'border-white/[0.1]', bg: 'bg-[#0D131F]', shadow: 'shadow-[0_-10px_30px_rgba(0,0,0,0.6)]', n: '01', tag: 'Évaluation Initiale', title: 'Comprendre son niveau sans biais', text: 'Situez précisément votre niveau d’italien (A1 à B2) grâce au test de positionnement, avant de choisir votre parcours.', icon: 'solar:chart-square-bold', img: cardEval },
+              { border: 'border-white/[0.12]', bg: 'bg-[#0F1726]', shadow: 'shadow-[0_-15px_35px_rgba(0,0,0,0.7)]', n: '02', tag: 'Italien L2', title: 'Progresser niveau par niveau', text: 'Grammaire, vocabulaire, compréhension et expression : 39 modules de A1 à B2, avec exercices corrigés et tests à la fin de chaque niveau.', icon: 'solar:target-bold', img: cardTests },
               { border: 'border-white/[0.14]', bg: 'bg-[#111C30]', shadow: 'shadow-[0_-20px_40px_rgba(0,0,0,0.8)]', n: '03', tag: 'Communication & Conviction', title: 'Présenter son projet avec assurance', text: "Apprenez à expliciter la cohérence entre votre parcours au Congo et votre diplôme visé en Italie lors de l'entretien consulaire.", icon: 'solar:user-speak-bold', img: cardEntretien },
               { border: 'border-white/[0.16]', bg: 'bg-[#132038]', shadow: 'shadow-[0_-25px_45px_rgba(0,0,0,0.85)]', n: '04', tag: 'Conformité Administrative', title: 'Organiser et sécuriser ses documents', text: 'Suivez rigoureusement les étapes de légalisation, Déclaration de Valeur (DoV) et pré-inscription Universitaly avec le centre de Brazzaville.', icon: 'solar:checklist-minimalistic-bold', img: cardDocs },
             ].map((step, i) => (
@@ -322,9 +322,9 @@ export function LandingPage() {
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
             {[
-              { span: 'md:col-span-7', grad: 'bg-[#0D131F]', img: imgExam, tag: 'TOLC-I · TOLC-E · TOLC-F · TOLC-MED', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:target-bold', title: 'Préparation aux tests', text: 'Simulations chronométrées, exercices par compétence et corrections détaillées pour assimiler la logique des tests d’admission.', foot: 'Banque de questions types', wide: true },
+              { span: 'md:col-span-7', grad: 'bg-[#0D131F]', img: imgExam, tag: 'A1 · A2 · B1 · B2', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:target-bold', title: 'Tests d’italien par niveau', text: 'Tests chronométrés, exercices par compétence et corrections détaillées pour valider chaque niveau d’italien.', foot: 'Questions tirées des cours du centre', wide: true },
               { span: 'md:col-span-5', grad: 'bg-gradient-to-br from-[#0D131F] to-[#070A0F]', img: imgAi, tag: 'Vocal & Écrit', tagCls: 'bg-[#0E8368]/20 border-[#0E8368]/40', icon: 'solar:magic-stick-3-bold', title: 'Entretien consulaire IA', text: 'Entraînez-vous à répondre à des questions réalistes avec retour pédagogique instantané sur la cohérence de vos propos.', foot: 'Entraînement à l’oral ou à l’écrit', wide: false },
-              { span: 'md:col-span-5', grad: 'bg-[#0D131F]', img: imgBooks, tag: 'Niveaux A1 → B2', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:book-bookmark-bold', title: 'Italien académique', text: 'Développez votre compréhension, enrichissez votre vocabulaire universitaire et préparez les certifications CILS / CELI.', foot: 'Exercices interactifs & phonétique', wide: false },
+              { span: 'md:col-span-5', grad: 'bg-[#0D131F]', img: imgBooks, tag: 'Niveaux A1 → B2', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:book-bookmark-bold', title: 'Cours d’italien L2', text: 'Des cours complets avec dialogues, vocabulaire et grammaire, et un assistant de prononciation pour écouter et répéter chaque mot.', foot: 'Écoute & prononciation', wide: false },
               { span: 'md:col-span-7', grad: 'bg-[#0D131F]', img: imgPlanning, tag: 'Checklist & Échéances', tagCls: 'bg-white/[0.05] border-white/[0.1]', icon: 'solar:checklist-minimalistic-bold', title: 'Suivi du projet', text: 'Visualisez vos progrès, archivez vos documents préparés et suivez les échéances en direct avec vos parents et nos conseillers.', foot: 'Visibilité partagée avec le centre de Brazzaville', wide: true },
             ].map((mod, i) => (
               <div key={mod.title} style={{ transitionDelay: `${i * 90}ms` }} className={`reveal group relative flex flex-col justify-between space-y-8 overflow-hidden rounded-3xl border border-white/[0.08] ${mod.grad} p-8 transition-all duration-500 hover:-translate-y-2 hover:border-[#0E8368] hover:shadow-[0_20px_40px_rgba(14,131,104,0.2)] sm:p-10 ${mod.span}`}>
@@ -422,9 +422,9 @@ export function LandingPage() {
           </div>
           <div className="mx-auto max-w-4xl space-y-6">
             {[
-              { top: 'top-28', border: 'border-white/[0.1]', bg: 'bg-[#0D131F]', shadow: 'shadow-[0_-10px_30px_rgba(0,0,0,0.6)]', badge: 'bg-[#0E8368] text-white', num: '1', tagCls: 'text-[#2DD4BF]', tag: 'Étape 1 · Diagnostic', title: 'Évaluez votre niveau initial', text: "Passez un test diagnostique gratuit de 10 minutes pour situer vos compétences en logique et votre niveau d'italien de départ.", img: cardEval },
-              { top: 'top-32', border: 'border-white/[0.14]', bg: 'bg-[#0F1726]', shadow: 'shadow-[0_-15px_35px_rgba(0,0,0,0.7)]', badge: 'bg-white text-[#070A0F]', num: '2', tagCls: 'text-white', tag: 'Étape 2 · Entraînement', title: 'Suivez un parcours personnalisé', text: 'Accédez aux séries d’exercices ciblées selon votre filière et participez aux séances de cours au centre de Brazzaville ou en ligne.', img: imgStudy },
-              { top: 'top-36', border: 'border-white/[0.18]', bg: 'bg-[#111C30]', shadow: 'shadow-[0_-20px_40px_rgba(0,0,0,0.85)]', badge: 'bg-[#E2583E] text-white', num: '3', tagCls: 'text-[#E2583E]', tag: 'Étape 3 · Finalisation', title: 'Préparez vos tests et votre entretien consulaire', text: "Multipliez les simulations chronométrées et les entretiens oraux avec l'Agent IA jusqu'à maîtriser parfaitement votre dossier.", img: cardEntretien },
+              { top: 'top-28', border: 'border-white/[0.1]', bg: 'bg-[#0D131F]', shadow: 'shadow-[0_-10px_30px_rgba(0,0,0,0.6)]', badge: 'bg-[#0E8368] text-white', num: '1', tagCls: 'text-[#2DD4BF]', tag: 'Étape 1 · Diagnostic', title: 'Évaluez votre niveau initial', text: "Passez un test de positionnement gratuit pour situer votre niveau d'italien de départ.", img: cardEval },
+              { top: 'top-32', border: 'border-white/[0.14]', bg: 'bg-[#0F1726]', shadow: 'shadow-[0_-15px_35px_rgba(0,0,0,0.7)]', badge: 'bg-white text-[#070A0F]', num: '2', tagCls: 'text-white', tag: 'Étape 2 · Entraînement', title: 'Suivez un parcours personnalisé', text: 'Suivez les modules de votre niveau, faites les exercices ciblés et participez aux séances de cours au centre de Brazzaville ou en ligne.', img: imgStudy },
+              { top: 'top-36', border: 'border-white/[0.18]', bg: 'bg-[#111C30]', shadow: 'shadow-[0_-20px_40px_rgba(0,0,0,0.85)]', badge: 'bg-[#E2583E] text-white', num: '3', tagCls: 'text-[#E2583E]', tag: 'Étape 3 · Finalisation', title: 'Validez votre niveau', text: "Passez les tests de fin de niveau et entraînez-vous à l'oral avec l'Agent IA pour gagner en aisance.", img: cardEntretien },
             ].map((step) => (
               <div key={step.num} className={`sticky ${step.top} overflow-hidden rounded-3xl border ${step.border} ${step.bg} p-8 ${step.shadow} transition-colors duration-500 hover:border-[#0E8368] sm:p-10`}>
                 <img src={step.img} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.7] [filter:brightness(1.15)saturate(1.05)]" />
@@ -630,7 +630,7 @@ export function LandingPage() {
             <div className="space-y-2 text-xs md:col-span-3">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Navigation</p>
               <ul className="space-y-1.5 text-slate-400">
-                <li><a href="#solutions" className="transition-colors hover:text-[#2DD4BF]">Tests CISIA / TOLC</a></li>
+                <li><a href="#solutions" className="transition-colors hover:text-[#2DD4BF]">Cours d’italien L2</a></li>
                 <li><a href="#ai-agent" className="transition-colors hover:text-[#2DD4BF]">Entretien IA</a></li>
                 <li><a href="#solutions" className="transition-colors hover:text-[#2DD4BF]">Italien académique</a></li>
                 <li><a href="#test-gratuit" className="transition-colors hover:text-[#2DD4BF]">Diagnostic gratuit</a></li>

@@ -75,7 +75,7 @@ export function SimulationsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Simulations de type TOLC</h1>
+        <h1 className="text-2xl font-bold">Tests d’italien</h1>
         <p className="text-stone-600">Entraînez-vous, révisez vos erreurs au bon moment, et faites régulièrement le point en conditions d’examen.</p>
       </div>
 

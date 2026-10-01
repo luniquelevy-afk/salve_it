@@ -153,7 +153,7 @@ export function PublicLayout() {
           {settings && <ContactDetails settings={settings} className="text-sm" />}
         </div>
         <p className="border-t border-white/[0.08] px-4 py-4 text-center text-xs text-slate-500">
-          Simulations de type TOLC — plateforme indépendante, non affiliée au CISIA. Les informations sur les visas doivent être vérifiées auprès de l’ambassade d’Italie.
+          Cours d’italien langue seconde (L2), niveaux A1 à B2. Les informations sur les visas doivent être vérifiées auprès de l’ambassade d’Italie.
         </p>
       </footer>
 

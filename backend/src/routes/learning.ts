@@ -139,7 +139,7 @@ const templateSchema = z.strictObject({
     .trim()
     .min(2)
     .max(40)
-    .regex(/^[A-Z0-9-]+$/, 'Code en majuscules, chiffres et tirets (ex. TOLC-E).'),
+    .regex(/^[A-Z0-9-]+$/, 'Code en majuscules, chiffres et tirets (ex. ITALIEN-A2).'),
   name: z.string().trim().min(2).max(160),
   description: z.string().trim().max(1000).nullable().optional(),
   language: z.string().trim().min(2).max(5).default('it'),
