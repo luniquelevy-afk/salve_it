@@ -1,4 +1,5 @@
 import type { Course } from '../lib/types';
+import { CourseMarkdown } from './course/CourseMarkdown';
 
 function youTubeId(url: string): string | null {
   try {
@@ -28,7 +29,7 @@ export function CourseContent({ course }: { course: Course }) {
 
   switch (course.contentType) {
     case 'text':
-      return <div className="whitespace-pre-line leading-relaxed text-stone-800">{course.body}</div>;
+      return <CourseMarkdown source={course.body ?? ''} />;
     case 'video': {
       const id = youTubeId(url);
       if (id && /^[\w-]{6,20}$/.test(id)) {

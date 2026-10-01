@@ -41,7 +41,11 @@ export async function seedDemoContent(): Promise<string> {
 
   const questions = await insertIfAbsent('questions', 'question_text', DEMO_QUESTIONS);
   const faq = await insertIfAbsent('faq_items', 'question', DEMO_FAQ);
-  await must(db.from('level_test_questions').upsert(LEVEL_TEST_QUESTIONS, { onConflict: 'order_index', ignoreDuplicates: true }));
+  // Le test de positionnement du programme (migration 0003) prime sur ces questions de démonstration.
+  const levelTest = await must(db.from('level_test_questions').select('id').limit(1));
+  if ((levelTest as unknown[]).length === 0) {
+    await must(db.from('level_test_questions').upsert(LEVEL_TEST_QUESTIONS, { onConflict: 'order_index', ignoreDuplicates: true }));
+  }
 
   let course = await must(db.from('courses').select('id').eq('title', DEMO_COURSE.title).maybeSingle());
   course ??= await must(db.from('courses').insert({ ...DEMO_COURSE, published_at: new Date().toISOString() }).select('id').single());

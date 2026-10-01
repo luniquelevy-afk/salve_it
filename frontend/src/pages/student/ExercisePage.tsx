@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ErrorBanner } from '../../components/ErrorBanner';
+import { PronunciationAssistant } from '../../components/course/PronunciationAssistant';
 import { api, ApiError } from '../../lib/api';
 import { formatPercent } from '../../lib/format';
 import { EXERCISE_TYPE_LABELS, type ExerciseDetail, type GapFillContent, type GradeResult, type MatchingContent, type QcmContent } from '../../lib/types';
@@ -159,6 +160,7 @@ export function ExercisePage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
+      <PronunciationAssistant />
       <Link to={exercise.courseId ? `/etudiant/cours/${exercise.courseId}` : '/etudiant/exercices'} className="text-sm text-verde-dark hover:underline">
         ← Retour
       </Link>

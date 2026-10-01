@@ -5,6 +5,7 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../lib/db/index.js';
 import { firebaseAuth, firestore, usingEmulators } from '../lib/firebase.js';
+import { importItalianCourse } from './italian-course.js';
 import { BADGES, CHECKLIST_REQUIREMENTS, DOCUMENT_TYPES, EMBASSY_SCENARIOS } from './reference-data.js';
 
 export interface Migration {
@@ -50,6 +51,13 @@ export const MIGRATIONS: Migration[] = [
         multiFactorConfig: { state: 'ENABLED', providerConfigs: [{ state: 'ENABLED', totpProviderConfig: { adjacentIntervals: 5 } }] },
       });
       log('MFA TOTP activée sur le projet');
+    },
+  },
+  {
+    id: '0003_italian_course',
+    description: 'Programme d’italien A1 → B2 : cours, exercices autocorrigés, banque de QCM, tests par niveau, test de positionnement',
+    async up(log) {
+      await importItalianCourse(log);
     },
   },
 ];

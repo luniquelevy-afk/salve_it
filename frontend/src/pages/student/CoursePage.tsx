@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CourseContent } from '../../components/CourseContent';
+import { PronunciationAssistant } from '../../components/course/PronunciationAssistant';
 import { ErrorBanner } from '../../components/ErrorBanner';
 import { api, ApiError } from '../../lib/api';
+import { collectItalianSnippets, parseMarkdown } from '../../lib/markdown';
 import { COURSE_TYPE_LABELS, EXERCISE_TYPE_LABELS, type Course, type ExerciseType } from '../../lib/types';
 
 interface CourseResponse {
@@ -14,6 +16,8 @@ export function CoursePage() {
   const { id = '' } = useParams();
   const [data, setData] = useState<CourseResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const body = data?.course.contentType === 'text' ? (data.course.body ?? '') : '';
+  const words = useMemo(() => (body ? collectItalianSnippets(parseMarkdown(body)) : []), [body]);
 
   useEffect(() => {
     api<CourseResponse>(`/api/courses/${id}`)
@@ -36,7 +40,8 @@ export function CoursePage() {
   const { course, exercises } = data;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="mx-auto max-w-4xl space-y-5">
+      <PronunciationAssistant words={words} />
       <Link to="/etudiant/cours" className="text-sm text-verde-dark hover:underline">
         ← Tous les cours
       </Link>
