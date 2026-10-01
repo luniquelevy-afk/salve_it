@@ -460,3 +460,10 @@ export const BADGES = [
     "sort_order": 50
   }
 ];
+
+// Coordonnées publiques du centre (communiquées par le porteur de projet), modifiables ensuite dans /admin/site.
+export const CENTRE_CONTACT = {
+  phone: '+242 06 673 3974',
+  whatsapp: '+242 06 673 3974',
+  email: 'info.salveitalia@gmail.com',
+};

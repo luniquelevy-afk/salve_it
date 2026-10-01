@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { api } from '../../lib/api';
-import { whatsappLink } from '../../lib/public-site';
+import { CENTRE_CONTACT, whatsappLink } from '../../lib/public-site';
 import type { PublicSite, SiteSettings } from '../../lib/types';
 import { Icon } from './landing-icon';
 import italyPanorama from '../../assets/landing/images/italy-panorama.jpg';
@@ -41,13 +41,13 @@ export function LandingPage() {
   const centre = {
     name: settings?.centreName && settings.centreName !== 'Salve Italia' ? settings.centreName : 'notre centre',
     address: settings?.address ?? 'Brazzaville, République du Congo',
-    phone: settings?.phone ?? null,
-    whatsapp: settings?.whatsapp ?? null,
-    email: settings?.email ?? null,
+    phone: settings?.phone || CENTRE_CONTACT.phone,
+    whatsapp: settings?.whatsapp || CENTRE_CONTACT.whatsapp,
+    email: settings?.email || CENTRE_CONTACT.email,
     hours: settings?.openingHours ?? null,
     about: settings?.about ?? null,
   };
-  const waHref = centre.whatsapp ? whatsappLink(centre.whatsapp) : 'https://wa.me/242000000000';
+  const waHref = whatsappLink(centre.whatsapp);
 
   // Motion : révèle les blocs marqués « reveal » quand ils entrent dans le viewport.
   useEffect(() => {
@@ -528,21 +528,21 @@ export function LandingPage() {
                   <span className="mt-0.5 text-base" aria-hidden>📞</span>
                   <div>
                     <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Téléphone</dt>
-                    <dd><a href={`tel:${(centre.phone ?? '+242060000000').replace(/[^\d+]/g, '')}`} className="text-slate-200 hover:text-white">{centre.phone ?? '+242 06 000 00 00'}</a></dd>
+                    <dd><a href={`tel:${centre.phone.replace(/[^\d+]/g, '')}`} className="text-slate-200 hover:text-white">{centre.phone}</a></dd>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Icon name="solar:chat-round-line-bold" size={18} className="mt-0.5 text-emerald-400" />
                   <div>
                     <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-500">WhatsApp</dt>
-                    <dd><a href={waHref} target="_blank" rel="noopener noreferrer" className="text-slate-200 hover:text-white">{centre.whatsapp ?? 'Écrire au centre'}</a></dd>
+                    <dd><a href={waHref} target="_blank" rel="noopener noreferrer" className="text-slate-200 hover:text-white">{centre.whatsapp}</a></dd>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <span className="mt-0.5 text-base" aria-hidden>✉️</span>
                   <div>
                     <dt className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Email</dt>
-                    <dd><a href={`mailto:${centre.email ?? 'contact@salveitalia.cg'}`} className="text-slate-200 hover:text-white">{centre.email ?? 'contact@salveitalia.cg'}</a></dd>
+                    <dd><a href={`mailto:${centre.email}`} className="text-slate-200 hover:text-white">{centre.email}</a></dd>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -639,8 +639,9 @@ export function LandingPage() {
             <div className="space-y-2 text-xs md:col-span-4">
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Centre &amp; Contact</p>
               <ul className="space-y-1.5 text-slate-400">
-                <li>WhatsApp : +242 06 000 00 00</li>
-                <li>Email : contact@salveitalia.cg</li>
+                <li>Téléphone : <a href={`tel:${centre.phone.replace(/[^\d+]/g, '')}`} className="transition-colors hover:text-[#2DD4BF]">{centre.phone}</a></li>
+                <li>WhatsApp : <a href={waHref} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-[#2DD4BF]">{centre.whatsapp}</a></li>
+                <li>Email : <a href={`mailto:${centre.email}`} className="transition-colors hover:text-[#2DD4BF]">{centre.email}</a></li>
                 <li>Centre de langue partenaire · Brazzaville</li>
               </ul>
             </div>
@@ -657,7 +658,7 @@ export function LandingPage() {
       </footer>
 
       {/* WhatsApp flottant */}
-      <a href="https://wa.me/242000000000" target="_blank" rel="noopener noreferrer" aria-label="Contacter le centre sur WhatsApp" className="fixed bottom-6 right-6 z-50 flex size-13 items-center justify-center rounded-full bg-[#0E8368] p-3.5 text-white shadow-[0_10px_30px_rgba(14,131,104,0.4)] transition-all duration-300 hover:scale-105 active:scale-95">
+      <a href={waHref} target="_blank" rel="noopener noreferrer" aria-label="Contacter le centre sur WhatsApp" className="fixed bottom-6 right-6 z-50 flex size-13 items-center justify-center rounded-full bg-[#0E8368] p-3.5 text-white shadow-[0_10px_30px_rgba(14,131,104,0.4)] transition-all duration-300 hover:scale-105 active:scale-95">
         <Icon name="solar:chat-round-dots-bold" size={24} />
       </a>
     </div>

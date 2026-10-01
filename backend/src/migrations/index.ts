@@ -6,6 +6,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { db } from '../lib/db/index.js';
 import { firebaseAuth, firestore, usingEmulators } from '../lib/firebase.js';
 import { importItalianCourse } from './italian-course.js';
+import { CENTRE_CONTACT } from './reference-data.js';
 import { BADGES, CHECKLIST_REQUIREMENTS, DOCUMENT_TYPES, EMBASSY_SCENARIOS } from './reference-data.js';
 
 export interface Migration {
@@ -58,6 +59,24 @@ export const MIGRATIONS: Migration[] = [
     description: 'Programme d’italien A1 → B2 : cours, exercices autocorrigés, banque de QCM, tests par niveau, test de positionnement',
     async up(log) {
       await importItalianCourse(log);
+    },
+  },
+  {
+    id: '0004_centre_contact',
+    description: 'Coordonnées du centre sur le site public : téléphone, WhatsApp, email',
+    async up(log) {
+      // Ne complète que les champs vides : une saisie faite dans /admin/site reste prioritaire.
+      const { data, error } = await db.from('site_settings').select('phone, whatsapp, email').eq('id', true).single();
+      if (error) throw error;
+      const current = data as { phone: string | null; whatsapp: string | null; email: string | null };
+      const patch = Object.fromEntries(Object.entries(CENTRE_CONTACT).filter(([field]) => !current[field as keyof typeof current]?.trim()));
+      if (Object.keys(patch).length === 0) {
+        log('coordonnées déjà renseignées : inchangées');
+        return;
+      }
+      const { error: updateError } = await db.from('site_settings').update(patch).eq('id', true);
+      if (updateError) throw updateError;
+      log(`renseigné : ${Object.keys(patch).join(', ')}`);
     },
   },
 ];
